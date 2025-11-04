@@ -1,0 +1,584 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.1);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 0, 0, 0.2);
+}
+
+/* TipTap Editor Styles */
+.ProseMirror {
+  outline: none;
+  padding: 0;
+  line-height: 1.6;
+  color: #37352f;
+}
+
+.ProseMirror p {
+  margin: 0;
+  padding: 3px 0;
+  min-height: 1.5rem;
+}
+
+.ProseMirror h1 {
+  font-size: 2.5rem;
+  font-weight: 700;
+  line-height: 1.2;
+  margin: 24px 0 8px 0;
+  color: #37352f;
+}
+
+.ProseMirror h2 {
+  font-size: 2rem;
+  font-weight: 600;
+  line-height: 1.3;
+  margin: 20px 0 6px 0;
+  color: #37352f;
+}
+
+.ProseMirror h3 {
+  font-size: 1.5rem;
+  font-weight: 600;
+  line-height: 1.3;
+  margin: 16px 0 4px 0;
+  color: #37352f;
+}
+
+.ProseMirror h4 {
+  font-size: 1.25rem;
+  font-weight: 600;
+  line-height: 1.4;
+  margin: 12px 0 4px 0;
+  color: #37352f;
+}
+
+.ProseMirror h5 {
+  font-size: 1.1rem;
+  font-weight: 600;
+  line-height: 1.4;
+  margin: 12px 0 4px 0;
+  color: #37352f;
+}
+
+.ProseMirror h6 {
+  font-size: 1rem;
+  font-weight: 600;
+  line-height: 1.4;
+  margin: 12px 0 4px 0;
+  color: #37352f;
+}
+
+.ProseMirror blockquote {
+  border-left: 3px solid #e5e7eb;
+  padding-left: 16px;
+  margin: 16px 0;
+  color: #6b7280;
+  font-style: italic;
+}
+
+.ProseMirror code {
+  background-color: rgba(135, 131, 120, 0.15);
+  color: #eb5757;
+  padding: 2px 4px;
+  border-radius: 4px;
+  font-size: 0.9em;
+  font-family: 'SFMono-Regular', Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;
+}
+
+.ProseMirror pre {
+  background: #f7f6f3;
+  border-radius: 8px;
+  padding: 16px;
+  margin: 16px 0;
+  overflow-x: auto;
+  font-family: 'SFMono-Regular', Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;
+}
+
+.ProseMirror pre code {
+  background: none;
+  color: inherit;
+  padding: 0;
+  font-size: 0.875rem;
+}
+
+.ProseMirror ul, .ProseMirror ol {
+  margin: 8px 0;
+  padding-left: 24px;
+}
+
+.ProseMirror li {
+  margin: 4px 0;
+}
+
+.ProseMirror ul[data-type="taskList"] {
+  list-style: none;
+  padding-left: 0;
+}
+
+.ProseMirror ul[data-type="taskList"] li {
+  display: flex;
+  align-items: flex-start;
+  margin: 4px 0;
+}
+
+.ProseMirror ul[data-type="taskList"] li input[type="checkbox"] {
+  margin-right: 8px;
+  margin-top: 2px;
+  flex-shrink: 0;
+}
+
+.ProseMirror table {
+  border-collapse: collapse;
+  table-layout: fixed;
+  width: 100%;
+  margin: 16px 0;
+  overflow: hidden;
+}
+
+.ProseMirror td, .ProseMirror th {
+  min-width: 1em;
+  border: 1px solid #e5e7eb;
+  padding: 8px 12px;
+  vertical-align: top;
+  box-sizing: border-box;
+  position: relative;
+}
+
+.ProseMirror th {
+  font-weight: bold;
+  text-align: left;
+  background-color: #f9fafb;
+}
+
+.ProseMirror .selectedCell:after {
+  z-index: 2;
+  position: absolute;
+  content: "";
+  left: 0; right: 0; top: 0; bottom: 0;
+  background: rgba(200, 200, 255, 0.4);
+  pointer-events: none;
+}
+
+.ProseMirror .column-resize-handle {
+  position: absolute;
+  right: -2px;
+  top: 0;
+  bottom: -2px;
+  width: 4px;
+  background-color: #adf;
+  pointer-events: none;
+}
+
+.ProseMirror .tableWrapper {
+  padding: 1rem 0;
+  overflow-x: auto;
+}
+
+.ProseMirror .resize-cursor {
+  cursor: ew-resize;
+  cursor: col-resize;
+}
+
+/* Placeholder styles */
+.ProseMirror p.is-editor-empty:first-child::before {
+  color: #a8a29e;
+  content: attr(data-placeholder);
+  float: left;
+  height: 0;
+  pointer-events: none;
+}
+
+/* Selection styles */
+.ProseMirror ::selection {
+  background: rgba(13, 110, 253, 0.15);
+}
+
+.ProseMirror ::-moz-selection {
+  background: rgba(13, 110, 253, 0.15);
+}
+
+/* Floating menu animations */
+.floating-menu, .bubble-menu {
+  animation: slide-up 0.2s ease-in-out;
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.15s ease-in-out;
+}
+
+@keyframes fadeIn {
+  0% {
+    opacity: 0;
+    transform: translateY(-4px) scale(0.98);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes slide-up {
+  0% {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* AI processing animation */
+.ai-processing {
+  background: linear-gradient(-45deg, #ee7752, #e73c7e, #23a6d5, #23d5ab);
+  background-size: 400% 400%;
+  animation: ai-gradient 2s ease infinite;
+}
+
+@keyframes ai-gradient {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+/* Custom button styles */
+.btn-primary {
+  @apply bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg transition-colors duration-200;
+}
+
+.btn-secondary {
+  @apply bg-gray-100 hover:bg-gray-200 text-gray-800 font-medium py-2 px-4 rounded-lg transition-colors duration-200;
+}
+
+.btn-ghost {
+  @apply hover:bg-gray-100 text-gray-700 font-medium py-2 px-3 rounded-lg transition-colors duration-200;
+}
+
+/* Tooltip styles */
+.tooltip {
+  @apply absolute z-50 px-2 py-1 text-xs text-white bg-black rounded shadow-lg pointer-events-none;
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+
+.tooltip.show {
+  opacity: 1;
+}
+
+/* Loading spinner */
+.spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid #f3f4f6;
+  border-top: 2px solid #3b82f6;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* AI Diff View Styles */
+.ai-rewrite-diff {
+  position: relative;
+  display: inline-block;
+  animation: diffAppear 0.3s ease-in-out;
+}
+
+.ai-rewrite-before {
+  text-decoration: line-through;
+  color: #dc2626;
+  background-color: rgba(239, 68, 68, 0.1);
+  padding: 2px 4px;
+  border-radius: 3px;
+}
+
+.ai-rewrite-after {
+  color: #059669;
+  background-color: rgba(16, 185, 129, 0.1);
+  padding: 2px 4px;
+  border-radius: 3px;
+  position: relative;
+}
+
+.ai-rewrite-after::before {
+  content: '';
+  position: absolute;
+  left: -4px;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background-color: #10b981;
+  border-radius: 1px;
+}
+
+@keyframes diffAppear {
+  0% {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* AI Streaming indicator */
+.ai-streaming {
+  position: relative;
+  background: linear-gradient(90deg, transparent, rgba(139, 92, 246, 0.1), transparent);
+  background-size: 200% 100%;
+  animation: aiStream 2s infinite;
+}
+
+@keyframes aiStream {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+/* Space prompt styles */
+.space-prompt {
+  backdrop-filter: blur(8px);
+  background: rgba(255, 255, 255, 0.95);
+  border: 1px solid rgba(139, 92, 246, 0.2);
+}
+
+.space-prompt::before {
+  content: '';
+  position: absolute;
+  top: -6px;
+  left: 20px;
+  width: 0;
+  height: 0;
+  border-left: 6px solid transparent;
+  border-right: 6px solid transparent;
+  border-bottom: 6px solid rgba(139, 92, 246, 0.2);
+}
+
+.space-prompt::after {
+  content: '';
+  position: absolute;
+  top: -5px;
+  left: 21px;
+  width: 0;
+  height: 0;
+  border-left: 5px solid transparent;
+  border-right: 5px solid transparent;
+  border-bottom: 5px solid rgba(255, 255, 255, 0.95);
+}
+
+/* Modal backdrop */
+.modal-backdrop {
+  backdrop-filter: blur(4px);
+  animation: backdropFadeIn 0.2s ease-out;
+}
+
+@keyframes backdropFadeIn {
+  0% {
+    opacity: 0;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+/* Rewrite modal */
+.rewrite-modal {
+  transform: scale(0.95);
+  opacity: 0;
+  animation: modalSlideIn 0.2s ease-out forwards;
+}
+
+@keyframes modalSlideIn {
+  0% {
+    transform: scale(0.95) translateY(20px);
+    opacity: 0;
+  }
+  100% {
+    transform: scale(1) translateY(0);
+    opacity: 1;
+  }
+}
+
+/* Streaming cursor effect */
+.streaming-cursor {
+  display: inline-block;
+  width: 2px;
+  height: 1.2em;
+  background-color: #3b82f6;
+  animation: streamingBlink 1s infinite;
+  margin-left: 1px;
+  vertical-align: text-bottom;
+}
+
+@keyframes streamingBlink {
+  0%, 50% {
+    opacity: 1;
+  }
+  51%, 100% {
+    opacity: 0;
+  }
+}
+
+/* Bubble menu improvements */
+.bubble-menu {
+  backdrop-filter: blur(8px);
+  background: rgba(255, 255, 255, 0.95);
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+  will-change: transform;
+}
+
+/* Menu z-index hierarchy */
+.ai-floating-menu {
+  z-index: 90 !important;
+}
+
+.space-prompt {
+  z-index: 95 !important;
+}
+
+.bubble-menu {
+  z-index: 100 !important;
+}
+
+/* Ensure menus don't interfere with each other */
+.menu-overlay {
+  pointer-events: none;
+}
+
+.menu-overlay > * {
+  pointer-events: auto;
+}
+
+.bubble-menu::before {
+  content: '';
+  position: absolute;
+  bottom: -6px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 0;
+  height: 0;
+  border-left: 6px solid transparent;
+  border-right: 6px solid transparent;
+  border-top: 6px solid rgba(229, 231, 235, 1);
+}
+
+.bubble-menu::after {
+  content: '';
+  position: absolute;
+  bottom: -5px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 0;
+  height: 0;
+  border-left: 5px solid transparent;
+  border-right: 5px solid transparent;
+  border-top: 5px solid rgba(255, 255, 255, 0.95);
+}
+
+/* AI prompt input focus styles */
+.ai-prompt-input:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(139, 92, 246, 0.2);
+}
+
+/* Rewrite modal content styling */
+.rewrite-content {
+  line-height: 1.7;
+  font-size: 16px;
+  color: #374151;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+}
+
+.rewrite-content p {
+  margin-bottom: 1em;
+}
+
+/* Modal header styling */
+.modal-header {
+  border-bottom: 1px solid #e5e7eb;
+  background: linear-gradient(to right, #f8fafc, #ffffff);
+}
+
+/* Progress indicator for AI generation */
+.ai-progress {
+  position: relative;
+  overflow: hidden;
+}
+
+.ai-progress::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, #3b82f6, transparent);
+  animation: aiProgress 2s infinite;
+}
+
+@keyframes aiProgress {
+  0% {
+    left: -100%;
+  }
+  100% {
+    left: 100%;
+  }
+}
+
+/* Button hover effects */
+.btn-regenerate {
+  transition: all 0.15s ease;
+}
+
+.btn-regenerate:hover {
+  background-color: #f3f4f6;
+  transform: translateY(-1px);
+}
+
+.btn-accept {
+  background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+  transition: all 0.15s ease;
+}
+
+.btn-accept:hover {
+  background: linear-gradient(135deg, #1d4ed8, #1e3a8a);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
+}
+
+/* Improved selection highlight */
+.ProseMirror ::selection {
+  background: rgba(139, 92, 246, 0.2);
+}
+
+.ProseMirror ::-moz-selection {
+  background: rgba(139, 92, 246, 0.2);
+}

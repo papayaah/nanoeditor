@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chrome AI Test</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            line-height: 1.6;
+        }
+        .test-section {
+            margin: 20px 0;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+        }
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        .result {
+            margin: 10px 0;
+            padding: 10px;
+            background: #f8f9fa;
+            border-radius: 4px;
+            white-space: pre-wrap;
+        }
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+        }
+        .success {
+            background: #d4edda;
+            color: #155724;
+        }
+    </style>
+</head>
+<body>
+    <h1>Chrome AI API Test</h1>
+    
+    <div class="test-section">
+        <h2>API Detection</h2>
+        <p class="text-sm text-gray-600 mb-3">
+            Make sure you have enabled these flags in Chrome Canary:
+            <br>• chrome://flags/#writer-api-for-gemini-nano
+            <br>• chrome://flags/#rewriter-api-for-gemini-nano
+        </p>
+        <button onclick="testAPIDetection()">Check AI API Availability</button>
+        <div id="detection-result" class="result"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>Writer API Test</h2>
+        <button onclick="testWriter()">Test Writer</button>
+        <button onclick="testWriterCapabilities()">Check Writer Capabilities</button>
+        <div id="writer-result" class="result"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>Rewriter API Test</h2>
+        <button onclick="testRewriter()">Test Rewriter</button>
+        <button onclick="testRewriterCapabilities()">Check Rewriter Capabilities</button>
+        <div id="rewriter-result" class="result"></div>
+    </div>
+
+    <script>
+        function log(elementId, message, isError = false) {
+            const element = document.getElementById(elementId);
+            element.textContent = message;
+            element.className = `result ${isError ? 'error' : 'success'}`;
+        }
+
+        async function testAPIDetection() {
+            try {
+                const result = {
+                    writerExists: typeof self.Writer !== 'undefined',
+                    rewriterExists: typeof self.Rewriter !== 'undefined',
+                    writerGlobal: !!self.Writer,
+                    rewriterGlobal: !!self.Rewriter
+                };
+                
+                log('detection-result', JSON.stringify(result, null, 2));
+                console.log('API Detection:', result);
+            } catch (error) {
+                log('detection-result', `Error: ${error.message}`, true);
+                console.error('Detection error:', error);
+            }
+        }
+
+        async function testWriterCapabilities() {
+            try {
+                if (typeof self.Writer === 'undefined') {
+                    throw new Error('Writer API not available');
+                }
+                
+                const availability = await self.Writer.availability();
+                log('writer-result', `Writer availability: ${availability}`);
+                console.log('Writer availability:', availability);
+            } catch (error) {
+                log('writer-result', `Writer availability error: ${error.message}`, true);
+                console.error('Writer availability error:', error);
+            }
+        }
+
+        async function testWriter() {
+            try {
+                if (typeof self.Writer === 'undefined') {
+                    throw new Error('Writer API not available');
+                }
+
+                log('writer-result', 'Creating writer session...');
+                const writer = await self.Writer.create({
+                    tone: 'neutral',
+                    format: 'plain-text',
+                    length: 'short'
+                });
+
+                log('writer-result', 'Writer created, generating text...');
+                const result = await writer.write('Write a short paragraph about artificial intelligence');
+                
+                if (writer.destroy) {
+                    writer.destroy();
+                }
+                log('writer-result', `Generated text: ${result}`);
+                console.log('Writer result:', result);
+            } catch (error) {
+                log('writer-result', `Writer error: ${error.message}`, true);
+                console.error('Writer error:', error);
+            }
+        }
+
+        async function testRewriterCapabilities() {
+            try {
+                if (typeof self.Rewriter === 'undefined') {
+                    throw new Error('Rewriter API not available');
+                }
+                
+                const availability = await self.Rewriter.availability();
+                log('rewriter-result', `Rewriter availability: ${availability}`);
+                console.log('Rewriter availability:', availability);
+            } catch (error) {
+                log('rewriter-result', `Rewriter availability error: ${error.message}`, true);
+                console.error('Rewriter availability error:', error);
+            }
+        }
+
+        async function testRewriter() {
+            try {
+                if (typeof self.Rewriter === 'undefined') {
+                    throw new Error('Rewriter API not available');
+                }
+
+                log('rewriter-result', 'Creating rewriter session...');
+                const rewriter = await self.Rewriter.create({
+                    tone: 'more-formal',
+                    format: 'as-is',
+                    length: 'as-is'
+                });
+
+                const originalText = 'This is a casual text that needs to be made more formal.';
+                log('rewriter-result', 'Rewriter created, rewriting text...');
+                const result = await rewriter.rewrite(originalText);
+                
+                if (rewriter.destroy) {
+                    rewriter.destroy();
+                }
+                log('rewriter-result', `Original: ${originalText}\nRewritten: ${result}`);
+                console.log('Rewriter result:', result);
+            } catch (error) {
+                log('rewriter-result', `Rewriter error: ${error.message}`, true);
+                console.error('Rewriter error:', error);
+            }
+        }
+
+        // Auto-test on load
+        window.addEventListener('load', () => {
+            testAPIDetection();
+        });
+    </script>
+</body>
+</html>
