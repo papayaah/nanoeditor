@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { Sparkles } from 'lucide-react';
 
 // Chrome AI Writer token limits (based on real usage)
 const TOKEN_LIMIT = 7000; // Actual Chrome AI limit appears to be around 7k tokens
@@ -100,18 +101,8 @@ export const DocumentInfo = ({ currentDocId, documents }) => {
   };
 
   return (
-    <div style={{
-      padding: '12px',
-      borderTop: '1px solid #e5e5e5',
-      backgroundColor: '#fafafa',
-      fontSize: '12px',
-      color: '#6b7280'
-    }}>
-      <div style={{ 
-        fontWeight: '600', 
-        marginBottom: '8px',
-        color: '#374151'
-      }}>
+    <div className="document-info">
+      <div className="document-info-title">
         Document Info
       </div>
       
@@ -151,20 +142,9 @@ export const DocumentInfo = ({ currentDocId, documents }) => {
         </div>
       </div>
 
-      <div style={{ 
-        marginTop: '12px',
-        paddingTop: '8px',
-        borderTop: '1px solid #e5e5e5'
-      }}>
-        <div style={{ 
-          fontWeight: '600', 
-          marginBottom: '8px',
-          color: '#7c3aed',
-          display: 'flex',
-          alignItems: 'center',
-          gap: '4px'
-        }}>
-          ✨ AI Metrics
+      <div className="ai-metrics-section">
+        <div className="ai-metrics-title">
+          <Sparkles size={14} /> AI Metrics
         </div>
         
         <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
@@ -196,7 +176,7 @@ export const DocumentInfo = ({ currentDocId, documents }) => {
             <div style={{
               width: '100%',
               height: '6px',
-              backgroundColor: '#e5e7eb',
+              backgroundColor: 'var(--border-color)',
               borderRadius: '3px',
               overflow: 'hidden'
             }}>
@@ -210,7 +190,7 @@ export const DocumentInfo = ({ currentDocId, documents }) => {
             </div>
             <div style={{ 
               fontSize: '10px', 
-              color: '#9ca3af', 
+              color: 'var(--text-secondary)', 
               marginTop: '2px',
               textAlign: 'center'
             }}>

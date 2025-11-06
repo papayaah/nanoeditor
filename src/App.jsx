@@ -15,15 +15,31 @@ import {
 import { PDFExporter, pdfDefaultSchemaMappings } from '@blocknote/xl-pdf-exporter';
 import * as ReactPDF from '@react-pdf/renderer';
 import '@blocknote/mantine/style.css';
+import { MantineProvider } from '@mantine/core';
+import { 
+  ChevronLeft, 
+  FileText, 
+  Code, 
+  Copy, 
+  FileDown, 
+  Plus, 
+  X,
+  Moon,
+  Sun,
+  Settings,
+  Check
+} from 'lucide-react';
 import { loadDocument, saveDocument, createDocument, deleteDocument, getAllDocuments } from './db';
 import { WriterPrompt } from './components/WriterPrompt';
 import { RewriteButton } from './components/RewriteButton';
 import { DocumentInfo } from './components/DocumentInfo';
+import { StreamingBlockIndicator } from './components/StreamingBlockIndicator';
 import './App.css';
 
-function Editor({ docId, onSave, onExportPdf }) {
+function Editor({ docId, onSave, onExportPdf, darkMode }) {
   const [initialContent, setInitialContent] = useState(undefined);
   const [isReady, setIsReady] = useState(false);
+  const [streamingBlockId, setStreamingBlockId] = useState(null);
 
   useEffect(() => {
     setIsReady(false);
@@ -159,6 +175,7 @@ function Editor({ docId, onSave, onExportPdf }) {
         editor={editor} 
         onChange={handleChange}
         formattingToolbar={false}
+        theme={darkMode ? 'dark' : 'light'}
       >
         <FormattingToolbarController
           formattingToolbar={() => (
@@ -175,13 +192,21 @@ function Editor({ docId, onSave, onExportPdf }) {
               <NestBlockButton key="nestBlockButton" />
               <UnnestBlockButton key="unnestBlockButton" />
               <CreateLinkButton key="createLinkButton" />
-              <RewriteButton key="rewriteButton" />
+              <RewriteButton key="rewriteButton" onStreamingBlock={setStreamingBlockId} />
             </FormattingToolbar>
           )}
         />
       </BlockNoteView>
       
-      <WriterPrompt editor={editor} isReady={isReady} onSave={onSave} currentDocId={docId} />
+      <StreamingBlockIndicator editor={editor} streamingBlockId={streamingBlockId} />
+      
+      <WriterPrompt 
+        editor={editor} 
+        isReady={isReady} 
+        onSave={onSave} 
+        currentDocId={docId}
+        onStreamingBlock={setStreamingBlockId}
+      />
     </div>
   );
 }
@@ -191,8 +216,35 @@ function App() {
   const [documents, setDocuments] = useState([]);
   const [showMarkdown, setShowMarkdown] = useState(false);
   const [markdown, setMarkdown] = useState('');
-  const [showSidebar, setShowSidebar] = useState(true);
+  const [showSidebar, setShowSidebar] = useState(() => {
+    const saved = localStorage.getItem('showSidebar');
+    return saved ? JSON.parse(saved) : false;
+  });
+  const [showSettings, setShowSettings] = useState(false);
+  const [darkMode, setDarkMode] = useState(() => {
+    const saved = localStorage.getItem('darkMode');
+    return saved ? JSON.parse(saved) : false;
+  });
   const exportPdfRef = useRef(null);
+
+  useEffect(() => {
+    localStorage.setItem('darkMode', JSON.stringify(darkMode));
+    document.documentElement.setAttribute('data-theme', darkMode ? 'dark' : 'light');
+  }, [darkMode]);
+
+  useEffect(() => {
+    localStorage.setItem('showSidebar', JSON.stringify(showSidebar));
+  }, [showSidebar]);
+
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (showSettings && !e.target.closest('.floating-settings')) {
+        setShowSettings(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [showSettings]);
 
   useEffect(() => {
     loadDocuments();
@@ -213,8 +265,15 @@ function App() {
   const handleSave = async (content) => {
     if (!currentDocId) return;
     await saveDocument(currentDocId, content);
-    // Reload documents to refresh titles in sidebar
-    await loadDocuments();
+    // Update just the title in the current documents array without reloading
+    const updatedDocs = documents.map(doc => {
+      if (doc.id === currentDocId) {
+        const title = getDocTitle({ ...doc, content: JSON.stringify(content) });
+        return { ...doc, title, content: JSON.stringify(content) };
+      }
+      return doc;
+    });
+    setDocuments(updatedDocs);
   };
 
   const handleNewDocument = async () => {
@@ -258,9 +317,12 @@ function App() {
     setShowMarkdown(!showMarkdown);
   };
 
+  const [showCopied, setShowCopied] = useState(false);
+
   const copyMarkdown = async () => {
     await navigator.clipboard.writeText(markdown);
-    alert('Markdown copied to clipboard!');
+    setShowCopied(true);
+    setTimeout(() => setShowCopied(false), 2000);
   };
 
   const exportToPdf = async () => {
@@ -289,16 +351,38 @@ function App() {
     return 'Untitled';
   };
 
+  const formatDate = (date) => {
+    const d = new Date(date);
+    const now = new Date();
+    const diffMs = now - d;
+    const diffMins = Math.floor(diffMs / 60000);
+    const diffHours = Math.floor(diffMs / 3600000);
+    const diffDays = Math.floor(diffMs / 86400000);
+
+    if (diffMins < 1) return 'Just now';
+    if (diffMins < 60) return `${diffMins}m ago`;
+    if (diffHours < 24) return `${diffHours}h ago`;
+    if (diffDays < 7) return `${diffDays}d ago`;
+    
+    return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  };
+
   if (!currentDocId) {
     return <div className="loading">Loading...</div>;
   }
 
   return (
     <div className="app">
+      <button onClick={() => setShowSidebar(!showSidebar)} className="sidebar-toggle-btn">
+        <ChevronLeft size={18} style={{ transform: showSidebar ? 'rotate(0deg)' : 'rotate(180deg)', transition: 'transform 0.3s' }} />
+      </button>
+      
       <div className={`sidebar ${showSidebar ? 'open' : 'closed'}`}>
         <div className="sidebar-header">
           <h2>Documents</h2>
-          <button onClick={handleNewDocument} className="new-doc-btn">+ New</button>
+          <button onClick={handleNewDocument} className="new-doc-btn">
+            <Plus size={16} /> New
+          </button>
         </div>
         <div className="document-list">
           {documents.map((doc) => (
@@ -307,7 +391,12 @@ function App() {
               className={`doc-item ${currentDocId === doc.id ? 'active' : ''}`}
               onClick={() => handleSelectDocument(doc.id)}
             >
-              <span className="doc-title">{getDocTitle(doc)}</span>
+              <div className="doc-item-content">
+                <span className="doc-title">{getDocTitle(doc)}</span>
+                {doc.updatedAt && (
+                  <span className="doc-date">{formatDate(doc.updatedAt)}</span>
+                )}
+              </div>
               <button
                 className="delete-btn"
                 onClick={(e) => {
@@ -315,7 +404,7 @@ function App() {
                   handleDeleteDocument(doc.id);
                 }}
               >
-                ×
+                <X size={16} />
               </button>
             </div>
           ))}
@@ -328,19 +417,36 @@ function App() {
       </div>
       
       <div className="main-content">
-        <div className="toolbar">
-          <button onClick={() => setShowSidebar(!showSidebar)} className="toolbar-btn">
-            {showSidebar ? '◀' : '▶'} Docs
+        <div className="floating-settings">
+          <button onClick={() => setShowSettings(!showSettings)} className="settings-toggle">
+            <Settings size={20} />
           </button>
-          <button onClick={toggleMarkdown} className="toolbar-btn">
-            {showMarkdown ? '📝 Editor' : '📄 Markdown'}
-          </button>
-          <button onClick={copyMarkdown} className="toolbar-btn">
-            📋 Copy
-          </button>
-          <button onClick={exportToPdf} className="toolbar-btn">
-            📄 PDF
-          </button>
+          {showSettings && (
+            <div className="settings-menu">
+              {!showSidebar && (
+                <button onClick={() => setShowSidebar(true)} className="settings-menu-btn">
+                  <ChevronLeft size={16} />
+                  <span>Show Sidebar</span>
+                </button>
+              )}
+              <button onClick={toggleMarkdown} className="settings-menu-btn">
+                {showMarkdown ? <FileText size={16} /> : <Code size={16} />}
+                <span>{showMarkdown ? 'Editor' : 'Markdown'}</span>
+              </button>
+              <button onClick={copyMarkdown} className="settings-menu-btn">
+                {showCopied ? <Check size={16} color="#10b981" /> : <Copy size={16} />}
+                <span>{showCopied ? 'Copied!' : 'Copy'}</span>
+              </button>
+              <button onClick={exportToPdf} className="settings-menu-btn">
+                <FileDown size={16} />
+                <span>Export PDF</span>
+              </button>
+              <button onClick={() => setDarkMode(!darkMode)} className="settings-menu-btn">
+                {darkMode ? <Sun size={16} /> : <Moon size={16} />}
+                <span>{darkMode ? 'Light Mode' : 'Dark Mode'}</span>
+              </button>
+            </div>
+          )}
         </div>
         <div className="editor-container">
           <div className="editor-wrapper">
@@ -349,7 +455,7 @@ function App() {
                 <pre>{markdown}</pre>
               </div>
             ) : (
-              <Editor key={currentDocId} docId={currentDocId} onSave={handleSave} onExportPdf={exportPdfRef} />
+              <Editor key={currentDocId} docId={currentDocId} onSave={handleSave} onExportPdf={exportPdfRef} darkMode={darkMode} />
             )}
           </div>
         </div>

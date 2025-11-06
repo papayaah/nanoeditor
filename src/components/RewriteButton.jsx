@@ -55,9 +55,7 @@ export const RewriteButton = ({ onStreamingBlock }) => {
           setAvailabilityStatus(availability);
           const isAvailable = availability === 'available' || availability === 'downloadable';
           setRewriterAvailable(isAvailable);
-          console.log('Chrome AI Rewriter availability:', availability);
         } catch (error) {
-          console.log('Chrome AI Rewriter not available:', error);
           setAvailabilityStatus('unavailable');
           setRewriterAvailable(false);
         }
@@ -72,7 +70,6 @@ export const RewriteButton = ({ onStreamingBlock }) => {
   const handleButtonClick = (e) => {
     e.preventDefault();
     e.stopPropagation();
-    console.log('Rewrite button clicked, current state:', showDropdown);
     
     if (!showDropdown && buttonRef.current) {
       const rect = buttonRef.current.getBoundingClientRect();
@@ -91,9 +88,6 @@ export const RewriteButton = ({ onStreamingBlock }) => {
       return await self.Rewriter.create(config);
     } else if (availabilityStatus === 'downloadable') {
       const rewriter = await self.Rewriter.create(config);
-      rewriter.addEventListener('downloadprogress', (e) => {
-        console.log(`Downloading AI model: ${Math.round((e.loaded / e.total) * 100)}%`);
-      });
       return rewriter;
     } else {
       throw new Error('Rewriter API is unavailable');
@@ -114,7 +108,6 @@ export const RewriteButton = ({ onStreamingBlock }) => {
       
       if (selection && selection.blocks && selection.blocks.length > 0) {
         // User has selected text across one or more blocks
-        console.log('Selection detected:', selection);
         blocksToRewrite = selection.blocks;
         
         // Extract text from all selected blocks
@@ -154,10 +147,6 @@ export const RewriteButton = ({ onStreamingBlock }) => {
         return;
       }
 
-      console.log('Blocks to rewrite:', blocksToRewrite);
-      console.log('Text to rewrite:', selectedText);
-      console.log('Starting AI rewrite with options:', rewriteOptions);
-
       // Create a fresh rewriter for each operation
       // Note: Rewriter instances cannot be reused after streaming
       const rewriterConfig = {
@@ -167,7 +156,6 @@ export const RewriteButton = ({ onStreamingBlock }) => {
         sharedContext: 'This is a document editor where users want to improve their writing.'
       };
 
-      console.log('Creating new rewriter with config:', rewriterConfig);
       const rewriter = await createRewriter(rewriterConfig);
 
       // Use the first block for streaming
@@ -187,7 +175,7 @@ export const RewriteButton = ({ onStreamingBlock }) => {
         }]
       });
 
-      // Notify parent about streaming block for WriterPrompt positioning
+      // Notify parent about streaming block for indicator
       if (onStreamingBlock) {
         onStreamingBlock(firstBlock.id);
       }
@@ -198,49 +186,133 @@ export const RewriteButton = ({ onStreamingBlock }) => {
       });
 
       let fullRewrittenText = '';
+      let currentBlockRef = { id: firstBlock.id };
       
       for await (const chunk of stream) {
         // Each chunk is incremental text to append
         fullRewrittenText += chunk;
         
-        // Update the block with the accumulated text
+        // Check if we completed a block (double newline indicates block boundary)
+        if (fullRewrittenText.includes('\n\n')) {
+          try {
+            // Split into completed blocks and remaining text
+            const parts = fullRewrittenText.split('\n\n');
+            const completedText = parts.slice(0, -1).join('\n\n');
+            const remainingText = parts[parts.length - 1];
+            
+            if (completedText.trim()) {
+              // Parse and insert completed blocks
+              const formattedBlocks = editor.tryParseMarkdownToBlocks(completedText + '\n\n');
+              
+              if (formattedBlocks && formattedBlocks.length > 0) {
+                const currentBlock = editor.getBlock(currentBlockRef.id);
+                if (currentBlock) {
+                  // Insert formatted blocks
+                  editor.insertBlocks(formattedBlocks, currentBlock, 'after');
+                  
+                  // Create new block for remaining text
+                  const newBlock = editor.insertBlocks([{
+                    type: "paragraph",
+                    content: [{
+                      type: "text",
+                      text: remainingText
+                    }]
+                  }], formattedBlocks[formattedBlocks.length - 1], 'after')[0];
+                  
+                  // Remove original block
+                  editor.removeBlocks([currentBlock]);
+                  
+                  // Update reference to new block
+                  currentBlockRef.id = newBlock.id;
+                  
+                  // Notify parent that streaming moved to new block
+                  if (onStreamingBlock) {
+                    onStreamingBlock(newBlock.id);
+                  }
+                  
+                  // Reset fullText to just remaining text
+                  fullRewrittenText = remainingText;
+                }
+              }
+            }
+          } catch (error) {
+            // Silently handle formatting errors
+          }
+        }
+        
+        // Update current block with accumulated text
         try {
-          editor.updateBlock(firstBlock, {
-            ...firstBlock,
-            content: [{
-              type: "text",
-              text: fullRewrittenText
-            }]
-          });
+          const block = editor.getBlock(currentBlockRef.id);
+          if (block) {
+            editor.updateBlock(block, {
+              ...block,
+              content: [{
+                type: "text",
+                text: fullRewrittenText
+              }]
+            });
+          }
         } catch (error) {
-          console.log('Error updating streaming block:', error);
+          // Silently handle block update errors
         }
       }
 
-      console.log('AI rewrite complete. Final text:', fullRewrittenText);
-
-      // After streaming is complete, format the final text if it contains markdown
-      if (fullRewrittenText.includes('**') || fullRewrittenText.startsWith('#') || fullRewrittenText.includes('*') || fullRewrittenText.includes('`')) {
-        try {
-          // Parse the final text as markdown
-          const formattedBlocks = editor.tryParseMarkdownToBlocks(fullRewrittenText);
-          
-          if (formattedBlocks && formattedBlocks.length > 0) {
-            // Replace with formatted blocks
-            editor.replaceBlocks([firstBlock], formattedBlocks);
+      // After streaming is complete, format any remaining unformatted text
+      try {
+        const currentBlock = editor.getBlock(currentBlockRef.id);
+        if (currentBlock && fullRewrittenText.trim()) {
+          // Check if the remaining text has markdown formatting
+          if (fullRewrittenText.includes('**') || fullRewrittenText.startsWith('#') || fullRewrittenText.includes('*') || fullRewrittenText.includes('`')) {
+            // Parse the remaining text as markdown
+            const markdownBlocks = editor.tryParseMarkdownToBlocks(fullRewrittenText);
+            
+            if (markdownBlocks && markdownBlocks.length > 0) {
+              // Insert formatted blocks
+              editor.insertBlocks(markdownBlocks, currentBlock, 'after');
+              
+              // Remove the unformatted block
+              editor.removeBlocks([currentBlock]);
+              
+              // Position cursor at the end of the last inserted block
+              const lastBlock = markdownBlocks[markdownBlocks.length - 1];
+              if (lastBlock) {
+                editor.setTextCursorPosition(lastBlock, 'end');
+              }
+            } else {
+              // Just add a space to the plain text
+              editor.updateBlock(currentBlock, {
+                ...currentBlock,
+                content: [{
+                  type: "text",
+                  text: fullRewrittenText + " "
+                }]
+              });
+            }
+          } else {
+            // No markdown formatting needed, just add a space
+            editor.updateBlock(currentBlock, {
+              ...currentBlock,
+              content: [{
+                type: "text",
+                text: fullRewrittenText + " "
+              }]
+            });
           }
-        } catch (error) {
-          console.log('Error formatting final rewritten text:', error);
         }
+      } catch (error) {
+        // Silently handle final formatting errors
       }
 
     } catch (error) {
       console.error('AI rewrite failed:', error);
       alert(`Rewrite failed: ${error.message}`);
     } finally {
-      // Note: We don't need to destroy the rewriter here as it's automatically
-      // cleaned up after streaming completes
       setIsRewriting(false);
+      
+      // Clear streaming indicator
+      if (onStreamingBlock) {
+        onStreamingBlock(null);
+      }
     }
   };
 
@@ -259,8 +331,6 @@ export const RewriteButton = ({ onStreamingBlock }) => {
       return () => document.removeEventListener('mousedown', handleClickOutside);
     }
   }, [showDropdown]);
-
-  console.log('RewriteButton render, showDropdown:', showDropdown, 'position:', dropdownPosition);
 
   return (
     <>

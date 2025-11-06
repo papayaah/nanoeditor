@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { Sparkles } from 'lucide-react';
 import { incrementAIGenerations } from '../db';
 
 // Helper functions for localStorage
@@ -7,7 +8,6 @@ const getStoredSetting = (key, defaultValue) => {
     const stored = localStorage.getItem(key);
     return stored !== null ? stored : defaultValue;
   } catch (error) {
-    console.log('Error reading from localStorage:', error);
     return defaultValue;
   }
 };
@@ -16,11 +16,11 @@ const setStoredSetting = (key, value) => {
   try {
     localStorage.setItem(key, value);
   } catch (error) {
-    console.log('Error writing to localStorage:', error);
+    // Silently handle localStorage errors
   }
 };
 
-export const WriterPrompt = ({ editor, isReady, onSave, currentDocId, streamingBlockId, onStreamingBlock }) => {
+export const WriterPrompt = ({ editor, isReady, onSave, currentDocId, onStreamingBlock }) => {
   const [showInput, setShowInput] = useState(false);
   const [inputPosition, setInputPosition] = useState({ top: 0, left: 0 });
   const [inputValue, setInputValue] = useState("");
@@ -34,7 +34,6 @@ export const WriterPrompt = ({ editor, isReady, onSave, currentDocId, streamingB
   
   const inputRef = useRef(null);
   const writerRef = useRef(null);
-  const positionUpdateRef = useRef(null);
 
   // Save settings to localStorage whenever they change
   useEffect(() => {
@@ -58,13 +57,10 @@ export const WriterPrompt = ({ editor, isReady, onSave, currentDocId, streamingB
           const availability = await self.Writer.availability();
           const isAvailable = availability === 'available' || availability === 'downloadable';
           setWriterAvailable(isAvailable);
-          console.log('Chrome AI Writer availability:', availability);
-          console.log('Writer available:', isAvailable);
         } else {
-          console.log('Chrome AI Writer API not found (self.Writer)');
         }
       } catch (error) {
-        console.log('Error checking Chrome AI Writer:', error);
+        // Silently handle AI availability check errors
       }
     };
     checkAI();
@@ -77,22 +73,17 @@ export const WriterPrompt = ({ editor, isReady, onSave, currentDocId, streamingB
     let editorElement = null;
 
     const handleKeyDown = (event) => {
-      console.log('Key pressed:', event.key);
       if (event.key === ' ' && !event.shiftKey && !event.ctrlKey && !event.metaKey) {
-        console.log('Spacebar detected!');
         // Check if current block is empty
         try {
           const currentBlock = editor.getTextCursorPosition().block;
-          console.log('Current block:', currentBlock);
           const isEmpty = !currentBlock.content || 
                          currentBlock.content.length === 0 ||
                          (currentBlock.content.length === 1 && 
                           currentBlock.content[0].type === 'text' && 
                           currentBlock.content[0].text.trim() === '');
 
-          console.log('Is empty?', isEmpty);
           if (isEmpty) {
-            console.log('Showing input!');
             
             event.preventDefault(); // Prevent space from being added
             
@@ -113,8 +104,6 @@ export const WriterPrompt = ({ editor, isReady, onSave, currentDocId, streamingB
                 const rect = span.getBoundingClientRect();
                 span.remove();
                 
-                console.log('Cursor rect:', rect);
-                
                 if (rect.top > 0 || rect.left > 0) {
                   const inputHeight = 150;
                   const spaceBelow = window.innerHeight - rect.bottom;
@@ -125,17 +114,15 @@ export const WriterPrompt = ({ editor, isReady, onSave, currentDocId, streamingB
                     top: shouldPositionAbove ? rect.top - inputHeight - 5 : rect.bottom + 5,
                     left: rect.left
                   };
-                  console.log('Setting position:', position);
                   setInputPosition(position);
                   setShowInput(true);
                 } else {
-                  console.log('Invalid rect position:', rect);
                 }
               }
             }, 10);
           }
         } catch (error) {
-          console.log('Error checking for spacebar:', error);
+          // Silently handle errors
         }
       }
     };
@@ -147,10 +134,9 @@ export const WriterPrompt = ({ editor, isReady, onSave, currentDocId, streamingB
         editorElement = editor.domElement;
         if (editorElement) {
           editorElement.addEventListener('keydown', handleKeyDown, true);
-          console.log('Spacebar listener attached');
         }
       } catch (error) {
-        console.log('Editor not ready yet:', error);
+        // Editor not ready yet
       }
     }, 100);
 
@@ -158,7 +144,6 @@ export const WriterPrompt = ({ editor, isReady, onSave, currentDocId, streamingB
       clearTimeout(timer);
       if (editorElement) {
         editorElement.removeEventListener('keydown', handleKeyDown, true);
-        console.log('Spacebar listener removed');
       }
     };
   }, [editor, isReady]);
@@ -181,7 +166,7 @@ export const WriterPrompt = ({ editor, isReady, onSave, currentDocId, streamingB
           }]
         });
       } catch (error) {
-        console.log('Error inserting text:', error);
+        // Silently handle text insertion errors
       }
       setShowInput(false);
       setInputValue("");
@@ -192,42 +177,39 @@ export const WriterPrompt = ({ editor, isReady, onSave, currentDocId, streamingB
 
     // Use Chrome AI to generate content
     setIsGenerating(true);
+    setShowInput(false);
     
     try {
       // Get or create writer instance
       if (!writerRef.current) {
-        console.log('Creating new AI writer instance...');
         const availability = await self.Writer.availability();
         
         if (availability === 'available') {
           writerRef.current = await self.Writer.create({
             tone: tone,
             format: format,
-            length: length
+            length: length,
+            outputLanguage: 'en'
           });
         } else if (availability === 'downloadable') {
-          // Include monitor for download progress
           writerRef.current = await self.Writer.create({
             tone: tone,
             format: format,
             length: length,
-            monitor(m) {
-              m.addEventListener('downloadprogress', (e) => {
-                console.log(`Downloading AI model: ${Math.round((e.loaded / e.total) * 100)}%`);
-              });
-            }
+            outputLanguage: 'en'
           });
         } else {
           throw new Error('Writer API is unavailable');
         }
-        
-        console.log('AI writer created successfully');
       }
 
       const currentBlock = editor.getTextCursorPosition().block;
       const blockId = currentBlock.id;
       
-      console.log('Starting AI generation with prompt:', inputValue);
+      // Notify parent that streaming is starting on this block
+      if (onStreamingBlock) {
+        onStreamingBlock(blockId);
+      }
       
       // Get current document content as context for the AI
       const documentContext = editor.document
@@ -241,8 +223,6 @@ export const WriterPrompt = ({ editor, isReady, onSave, currentDocId, streamingB
           return '';
         })
         .join('\n') || 'New document';
-
-      console.log('Document context length:', documentContext.length);
 
       // Stream the AI response with document context
       const stream = writerRef.current.writeStreaming(inputValue, {
@@ -288,13 +268,18 @@ export const WriterPrompt = ({ editor, isReady, onSave, currentDocId, streamingB
                   // Update reference to new block
                   currentBlockRef.id = newBlock.id;
                   
+                  // Notify parent that streaming moved to new block
+                  if (onStreamingBlock) {
+                    onStreamingBlock(newBlock.id);
+                  }
+                  
                   // Reset fullText to just remaining text
                   fullText = remainingText;
                 }
               }
             }
           } catch (error) {
-            console.log('Error in real-time formatting:', error);
+            // Silently handle real-time formatting errors
           }
         }
         
@@ -311,11 +296,9 @@ export const WriterPrompt = ({ editor, isReady, onSave, currentDocId, streamingB
             });
           }
         } catch (error) {
-          console.log('Error updating block:', error);
+          // Silently handle block update errors
         }
       }
-
-      console.log('AI generation complete. Generated text length:', fullText.length);
 
       // After streaming is complete, format any remaining unformatted text
       try {
@@ -360,7 +343,7 @@ export const WriterPrompt = ({ editor, isReady, onSave, currentDocId, streamingB
           }
         }
       } catch (error) {
-        console.log('Error formatting final block:', error);
+        // Silently handle final block formatting errors
       }
 
     } catch (error) {
@@ -377,12 +360,16 @@ export const WriterPrompt = ({ editor, isReady, onSave, currentDocId, streamingB
           }]
         });
       } catch (err) {
-        console.log('Error inserting fallback text:', err);
+        // Silently handle fallback text insertion errors
       }
     } finally {
       setIsGenerating(false);
-      setShowInput(false);
       setInputValue("");
+      
+      // Clear streaming indicator
+      if (onStreamingBlock) {
+        onStreamingBlock(null);
+      }
       
       // Increment AI generation counter and save
       if (onSave && editor && currentDocId) {
@@ -394,7 +381,7 @@ export const WriterPrompt = ({ editor, isReady, onSave, currentDocId, streamingB
           const content = editor.document;
           onSave(content);
         } catch (error) {
-          console.log('Error saving after AI generation:', error);
+          // Silently handle save errors
         }
       }
     }
@@ -460,10 +447,9 @@ export const WriterPrompt = ({ editor, isReady, onSave, currentDocId, streamingB
             borderRadius: '4px',
             display: 'flex',
             alignItems: 'center',
-            justifyContent: 'center',
-            fontSize: '14px'
+            justifyContent: 'center'
           }}>
-            ✨
+            <Sparkles size={14} color="#a78bfa" />
           </div>
         )}
         <div style={{ fontSize: '12px', color: '#6b7280', fontWeight: '500' }}>

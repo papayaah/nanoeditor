@@ -2,19 +2,20 @@ import Dexie from 'dexie';
 
 export const db = new Dexie('NotionEditorDB');
 
-db.version(1).stores({
-  documents: '++id, title, content, updatedAt'
+db.version(2).stores({
+  documents: '++id, title, content, updatedAt, createdAt'
 });
 
 export const createDocument = async () => {
   try {
+    const now = new Date();
     const id = await db.documents.add({
       title: 'Untitled Document',
       content: JSON.stringify([]),
-      updatedAt: new Date()
+      createdAt: now,
+      updatedAt: now
     });
     const doc = await db.documents.get(id);
-    console.log('Document created:', id);
     return doc;
   } catch (error) {
     console.error('Error creating document:', error);
@@ -28,7 +29,6 @@ export const saveDocument = async (docId, content) => {
       content: JSON.stringify(content),
       updatedAt: new Date()
     });
-    console.log('Document saved:', docId);
   } catch (error) {
     console.error('Error saving document:', error);
   }
@@ -37,7 +37,6 @@ export const saveDocument = async (docId, content) => {
 export const loadDocument = async (docId) => {
   try {
     const doc = await db.documents.get(docId);
-    console.log('Document loaded:', doc ? 'Found' : 'Not found');
     return doc ? JSON.parse(doc.content) : null;
   } catch (error) {
     console.error('Error loading document:', error);
@@ -58,7 +57,6 @@ export const getAllDocuments = async () => {
 export const deleteDocument = async (docId) => {
   try {
     await db.documents.delete(docId);
-    console.log('Document deleted:', docId);
   } catch (error) {
     console.error('Error deleting document:', error);
   }
@@ -73,7 +71,6 @@ export const incrementAIGenerations = async (docId) => {
         aiGenerations: currentCount + 1,
         updatedAt: new Date()
       });
-      console.log('AI generation count incremented:', docId, currentCount + 1);
     }
   } catch (error) {
     console.error('Error incrementing AI generations:', error);
