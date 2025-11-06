@@ -10,6 +10,8 @@ export const RewriteButton = () => {
   const [availabilityStatus, setAvailabilityStatus] = useState('checking');
   const buttonRef = useRef(null);
   const dropdownRef = useRef(null);
+  const rewriterRef = useRef(null);
+  const rewriterConfigRef = useRef(null);
   const Components = useComponentsContext();
   const editor = useBlockNoteEditor();
 
@@ -85,13 +87,26 @@ export const RewriteButton = () => {
     setShowDropdown(!showDropdown);
   };
 
+  // Helper function to create a new rewriter
+  const createRewriter = async (config) => {
+    if (availabilityStatus === 'available') {
+      return await self.Rewriter.create(config);
+    } else if (availabilityStatus === 'downloadable') {
+      const rewriter = await self.Rewriter.create(config);
+      rewriter.addEventListener('downloadprogress', (e) => {
+        console.log(`Downloading AI model: ${Math.round((e.loaded / e.total) * 100)}%`);
+      });
+      return rewriter;
+    } else {
+      throw new Error('Rewriter API is unavailable');
+    }
+  };
+
   const handleRewrite = async (rewriteOptions) => {
     if (!rewriterAvailable || isRewriting) return;
 
     setIsRewriting(true);
     setShowDropdown(false);
-
-    let rewriter = null;
 
     try {
       // Get current text cursor position and block
@@ -121,23 +136,40 @@ export const RewriteButton = () => {
       console.log('Text to rewrite:', selectedText);
       console.log('Starting AI rewrite with options:', rewriteOptions);
 
-      // Create a fresh rewriter for this operation with only the valid API options
+      // Create rewriter config
       const rewriterConfig = {
-        tone: rewriteOptions.tone,
-        format: rewriteOptions.format,
-        length: rewriteOptions.length,
+        tone: rewriteOptions.options.tone,
+        format: rewriteOptions.options.format,
+        length: rewriteOptions.options.length,
         sharedContext: 'This is a document editor where users want to improve their writing.'
       };
 
-      if (availabilityStatus === 'available') {
-        rewriter = await self.Rewriter.create(rewriterConfig);
-      } else if (availabilityStatus === 'downloadable') {
-        rewriter = await self.Rewriter.create(rewriterConfig);
-        rewriter.addEventListener('downloadprogress', (e) => {
-          console.log(`Downloading AI model: ${Math.round((e.loaded / e.total) * 100)}%`);
-        });
+      let rewriter = rewriterRef.current;
+      let needsNewRewriter = false;
+
+      // Check if we need a new rewriter (first time or config changed)
+      if (!rewriter || JSON.stringify(rewriterConfigRef.current) !== JSON.stringify(rewriterConfig)) {
+        needsNewRewriter = true;
+      }
+
+      // Try to reuse existing rewriter, create new one if needed
+      if (needsNewRewriter) {
+        // Clean up old rewriter
+        if (rewriter) {
+          try {
+            rewriter.destroy();
+          } catch (error) {
+            console.log('Error destroying old rewriter:', error);
+          }
+        }
+
+        // Create new rewriter
+        console.log('Creating new rewriter with config:', rewriterConfig);
+        rewriter = await createRewriter(rewriterConfig);
+        rewriterRef.current = rewriter;
+        rewriterConfigRef.current = rewriterConfig;
       } else {
-        throw new Error('Rewriter API is unavailable');
+        console.log('Reusing existing rewriter');
       }
 
       // Clear the current block for streaming
@@ -193,21 +225,39 @@ export const RewriteButton = () => {
 
     } catch (error) {
       console.error('AI rewrite failed:', error);
+      
+      // If we get an AbortError, try creating a fresh rewriter
+      if (error.name === 'AbortError' && rewriterRef.current) {
+        console.log('AbortError detected, will create fresh rewriter next time');
+        try {
+          rewriterRef.current.destroy();
+        } catch (destroyError) {
+          console.log('Error destroying failed rewriter:', destroyError);
+        }
+        rewriterRef.current = null;
+        rewriterConfigRef.current = null;
+      }
+      
       alert(`Rewrite failed: ${error.message}`);
     } finally {
-      // Always clean up the rewriter after use
-      if (rewriter) {
-        try {
-          rewriter.destroy();
-        } catch (error) {
-          console.log('Error destroying rewriter:', error);
-        }
-      }
       setIsRewriting(false);
     }
   };
 
-
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      if (rewriterRef.current) {
+        try {
+          rewriterRef.current.destroy();
+        } catch (error) {
+          console.log('Error destroying rewriter on unmount:', error);
+        }
+        rewriterRef.current = null;
+        rewriterConfigRef.current = null;
+      }
+    };
+  }, []);
 
   useEffect(() => {
     const handleClickOutside = (event) => {
