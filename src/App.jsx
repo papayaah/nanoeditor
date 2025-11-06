@@ -1,30 +1,111 @@
 import { useEffect, useState } from 'react';
 import { BlockNoteView } from '@blocknote/mantine';
-import { useCreateBlockNote } from '@blocknote/react';
+import { 
+  useCreateBlockNote,
+  FormattingToolbar,
+  FormattingToolbarController,
+  BlockTypeSelect,
+  BasicTextStyleButton,
+  TextAlignButton,
+  ColorStyleButton,
+  NestBlockButton,
+  UnnestBlockButton,
+  CreateLinkButton
+} from '@blocknote/react';
 import '@blocknote/mantine/style.css';
-import { saveDocument, loadDocument, getAllDocuments, createDocument, deleteDocument } from './db';
+import { loadDocument, saveDocument, createDocument, deleteDocument, getAllDocuments } from './db';
+import { WriterPrompt } from './components/WriterPrompt';
+import { RewriteButton } from './components/RewriteButton';
 import './App.css';
 
 function Editor({ docId, onSave }) {
-  const [initialContent, setInitialContent] = useState(null);
+  const [initialContent, setInitialContent] = useState(undefined);
   const [isReady, setIsReady] = useState(false);
 
   useEffect(() => {
     setIsReady(false);
-    setInitialContent(null);
+    setInitialContent(undefined);
     loadDocument(docId).then((content) => {
-      setInitialContent(content || []);
+      // Clean up old textInput inline content from database
+      const cleanedContent = (content || []).map(block => {
+        if (block.content && Array.isArray(block.content)) {
+          return {
+            ...block,
+            content: block.content.filter(item => item.type === 'text')
+          };
+        }
+        return block;
+      });
+      setInitialContent(cleanedContent);
       setIsReady(true);
     });
   }, [docId]);
 
-  const editor = useCreateBlockNote();
+  const editor = useCreateBlockNote({
+    initialContent: initialContent,
+    uploadFile: async (file) => {
+      // Convert file to base64 data URL for local storage
+      return new Promise((resolve) => {
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          resolve(reader.result);
+        };
+        reader.readAsDataURL(file);
+      });
+    },
+  });
 
+  // Update editor content when initialContent changes
   useEffect(() => {
-    if (isReady && editor && initialContent !== null) {
+    if (editor && initialContent && isReady) {
       editor.replaceBlocks(editor.document, initialContent);
     }
-  }, [isReady, initialContent, editor]);
+  }, [editor, initialContent, isReady]);
+
+  // Handle paste events to convert markdown
+  useEffect(() => {
+    if (!editor || !isReady) return;
+
+    const handlePaste = async (event) => {
+      const pastedText = event.clipboardData?.getData('text/plain');
+      if (!pastedText) return;
+
+      // Check if pasted text looks like markdown (has markdown syntax)
+      const hasMarkdownSyntax = /^#{1,6}\s|^\*\*|^\*|^-\s|^\d+\.\s|^>\s|^```/m.test(pastedText);
+
+      if (hasMarkdownSyntax) {
+        event.preventDefault();
+        
+        try {
+          // Convert markdown to blocks using BlockNote's built-in parser
+          const blocks = editor.tryParseMarkdownToBlocks(pastedText);
+          
+          // Get current cursor position
+          const currentBlock = editor.getTextCursorPosition().block;
+          
+          // Insert the blocks at current position
+          editor.insertBlocks(blocks, currentBlock, 'after');
+          
+          // Remove current block if it's empty
+          const blockContent = currentBlock.content;
+          if (!blockContent || (Array.isArray(blockContent) && blockContent.length === 0)) {
+            editor.removeBlocks([currentBlock]);
+          }
+        } catch (error) {
+          console.log('Error parsing markdown:', error);
+          // If parsing fails, let default paste behavior happen
+        }
+      }
+    };
+
+    const editorElement = editor.domElement;
+    if (editorElement) {
+      editorElement.addEventListener('paste', handlePaste);
+      return () => {
+        editorElement.removeEventListener('paste', handlePaste);
+      };
+    }
+  }, [editor, isReady]);
 
   const handleChange = () => {
     if (!editor || !isReady) return;
@@ -36,7 +117,37 @@ function Editor({ docId, onSave }) {
     return <div style={{ padding: '60px', color: '#9b9a97' }}>Loading...</div>;
   }
 
-  return <BlockNoteView editor={editor} onChange={handleChange} />;
+  return (
+    <div style={{ position: 'relative' }}>
+      <BlockNoteView 
+        editor={editor} 
+        onChange={handleChange}
+        formattingToolbar={false}
+      >
+        <FormattingToolbarController
+          formattingToolbar={() => (
+            <FormattingToolbar>
+              <BlockTypeSelect key="blockTypeSelect" />
+              <BasicTextStyleButton basicTextStyle="bold" key="boldStyleButton" />
+              <BasicTextStyleButton basicTextStyle="italic" key="italicStyleButton" />
+              <BasicTextStyleButton basicTextStyle="underline" key="underlineStyleButton" />
+              <BasicTextStyleButton basicTextStyle="strike" key="strikeStyleButton" />
+              <TextAlignButton textAlignment="left" key="textAlignLeftButton" />
+              <TextAlignButton textAlignment="center" key="textAlignCenterButton" />
+              <TextAlignButton textAlignment="right" key="textAlignRightButton" />
+              <ColorStyleButton key="colorStyleButton" />
+              <NestBlockButton key="nestBlockButton" />
+              <UnnestBlockButton key="unnestBlockButton" />
+              <CreateLinkButton key="createLinkButton" />
+              <RewriteButton key="rewriteButton" />
+            </FormattingToolbar>
+          )}
+        />
+      </BlockNoteView>
+      
+      <WriterPrompt editor={editor} isReady={isReady} />
+    </div>
+  );
 }
 
 function App() {
@@ -65,10 +176,7 @@ function App() {
   const handleSave = async (content) => {
     if (!currentDocId) return;
     await saveDocument(currentDocId, content);
-    // Don't reload documents on every save to prevent reordering
   };
-
-
 
   const handleNewDocument = async () => {
     const newDoc = await createDocument();
@@ -99,7 +207,6 @@ function App() {
   const toggleMarkdown = async () => {
     if (!showMarkdown && currentDocId) {
       const content = await loadDocument(currentDocId);
-      // Simple markdown conversion
       const md = content.map(block => {
         if (block.type === 'heading') {
           const level = '#'.repeat(block.props?.level || 1);
