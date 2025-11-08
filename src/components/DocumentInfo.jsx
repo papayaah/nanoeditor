@@ -109,7 +109,7 @@ export const DocumentInfo = ({ currentDocId, documents, collapsed, onToggle }) =
           Document Info
         </div>
         <button onClick={onToggle} className="collapse-toggle">
-          {collapsed ? <ChevronDown size={16} /> : <ChevronUp size={16} />}
+          {collapsed ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
         </button>
       </div>
       

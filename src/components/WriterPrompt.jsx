@@ -235,55 +235,7 @@ export const WriterPrompt = ({ editor, isReady, onSave, currentDocId, onStreamin
         // Each chunk is incremental text to append
         fullText += chunk;
         
-        // Check if we completed a block (double newline indicates block boundary)
-        if (fullText.includes('\n\n')) {
-          try {
-            // Split into completed blocks and remaining text
-            const parts = fullText.split('\n\n');
-            const completedText = parts.slice(0, -1).join('\n\n');
-            const remainingText = parts[parts.length - 1];
-            
-            if (completedText.trim()) {
-              // Parse and insert completed blocks
-              const formattedBlocks = editor.tryParseMarkdownToBlocks(completedText + '\n\n');
-              
-              if (formattedBlocks && formattedBlocks.length > 0) {
-                const currentBlock = editor.getBlock(currentBlockRef.id);
-                if (currentBlock) {
-                  // Insert formatted blocks
-                  editor.insertBlocks(formattedBlocks, currentBlock, 'after');
-                  
-                  // Create new block for remaining text
-                  const newBlock = editor.insertBlocks([{
-                    type: "paragraph",
-                    content: [{
-                      type: "text",
-                      text: remainingText
-                    }]
-                  }], formattedBlocks[formattedBlocks.length - 1], 'after')[0];
-                  
-                  // Remove original block
-                  editor.removeBlocks([currentBlock]);
-                  
-                  // Update reference to new block
-                  currentBlockRef.id = newBlock.id;
-                  
-                  // Notify parent that streaming moved to new block
-                  if (onStreamingBlock) {
-                    onStreamingBlock(newBlock.id);
-                  }
-                  
-                  // Reset fullText to just remaining text
-                  fullText = remainingText;
-                }
-              }
-            }
-          } catch (error) {
-            // Silently handle real-time formatting errors
-          }
-        }
-        
-        // Update current block with accumulated text
+        // Update current block with accumulated text (no real-time parsing)
         try {
           const block = editor.getBlock(currentBlockRef.id);
           if (block) {
@@ -304,35 +256,63 @@ export const WriterPrompt = ({ editor, isReady, onSave, currentDocId, onStreamin
       try {
         const currentBlock = editor.getBlock(currentBlockRef.id);
         if (currentBlock && fullText.trim()) {
-          // Check if the remaining text has markdown formatting
-          if (fullText.includes('**') || fullText.startsWith('#') || fullText.includes('*') || fullText.includes('`')) {
-            // Parse the remaining text as markdown
-            const markdownBlocks = editor.tryParseMarkdownToBlocks(fullText);
+          // Manually parse markdown to preserve newlines in code blocks
+          const blocks = [];
+          let processedText = fullText.replace(/\r\n/g, '\n');
+          
+          // Split by code blocks while preserving them
+          const codeBlockRegex = /```(\w*)\n([\s\S]*?)```/g;
+          let lastIndex = 0;
+          let match;
+          
+          while ((match = codeBlockRegex.exec(processedText)) !== null) {
+            // Add text before code block
+            const textBefore = processedText.slice(lastIndex, match.index).trim();
+            if (textBefore) {
+              // Parse the text portion as markdown
+              const textBlocks = await editor.tryParseMarkdownToBlocks(textBefore);
+              blocks.push(...textBlocks);
+            }
             
-            if (markdownBlocks && markdownBlocks.length > 0) {
-              // Insert formatted blocks
-              editor.insertBlocks(markdownBlocks, currentBlock, 'after');
-              
-              // Remove the unformatted block
-              editor.removeBlocks([currentBlock]);
-              
-              // Position cursor at the end of the last inserted block
-              const lastBlock = markdownBlocks[markdownBlocks.length - 1];
-              if (lastBlock) {
-                editor.setTextCursorPosition(lastBlock, 'end');
-              }
-            } else {
-              // Just add a space to the plain text
-              editor.updateBlock(currentBlock, {
-                ...currentBlock,
-                content: [{
-                  type: "text",
-                  text: fullText + " "
-                }]
-              });
+            // Add code block with preserved newlines
+            const language = match[1] || 'text';
+            const codeContent = match[2];
+            blocks.push({
+              type: 'codeBlock',
+              props: { language },
+              content: [{
+                type: 'text',
+                text: codeContent,
+                styles: {}
+              }]
+            });
+            
+            lastIndex = match.index + match[0].length;
+          }
+          
+          // Add remaining text after last code block
+          const textAfter = processedText.slice(lastIndex).trim();
+          if (textAfter) {
+            const textBlocks = await editor.tryParseMarkdownToBlocks(textAfter);
+            blocks.push(...textBlocks);
+          }
+          
+          console.log('Manually parsed blocks:', blocks);
+          
+          if (blocks.length > 0) {
+            // Insert formatted blocks after current block
+            const insertedBlocks = editor.insertBlocks(blocks, currentBlock, 'after');
+            
+            // Remove the temporary unformatted block
+            editor.removeBlocks([currentBlock]);
+            
+            // Position cursor at the end of the last inserted block
+            if (insertedBlocks && insertedBlocks.length > 0) {
+              const lastBlock = insertedBlocks[insertedBlocks.length - 1];
+              editor.setTextCursorPosition(lastBlock, 'end');
             }
           } else {
-            // No markdown formatting needed, just add a space
+            // Fallback: just add a space to the plain text
             editor.updateBlock(currentBlock, {
               ...currentBlock,
               content: [{
@@ -343,6 +323,8 @@ export const WriterPrompt = ({ editor, isReady, onSave, currentDocId, onStreamin
           }
         }
       } catch (error) {
+        console.error('Markdown parsing error:', error);
+        console.error('Full text was:', fullText);
         // Silently handle final block formatting errors
       }
 
