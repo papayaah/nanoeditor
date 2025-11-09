@@ -5,6 +5,23 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="description" content="A minimal Notion-style document editor with AI-powered writing assistance using Chrome's built-in AI features. Create, edit, and manage documents with markdown support." />
     <title>Document Editor</title>
+    <style>
+      /* Critical CSS - minimal reset only */
+      * { margin: 0; padding: 0; box-sizing: border-box; }
+      body { 
+        margin: 0; 
+        font-family: ui-sans-serif, system-ui, sans-serif;
+        background: #ffffff;
+        color: #37352f;
+        overflow: hidden;
+      }
+      #root { 
+        min-height: 100vh; 
+        background: #fff;
+        display: flex;
+        overflow: hidden;
+      }
+    </style>
   </head>
   <body>
     <div id="root"></div>

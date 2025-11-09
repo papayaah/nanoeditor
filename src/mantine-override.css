@@ -1,0 +1,38 @@
+/* Override Mantine/BlockNote font loading to use system fonts */
+:root {
+  --mantine-font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif !important;
+  --mantine-font-family-monospace: 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', Consolas, 'Courier New', monospace !important;
+}
+
+/* Prevent font downloads by overriding with local system fonts */
+@font-face {
+  font-family: 'Inter';
+  src: local('Arial');
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Geist Mono';
+  src: local('Monaco'), local('Menlo'), local('Consolas');
+  font-display: swap;
+}
+
+/* Force BlockNote editor to use system fonts */
+.bn-container,
+.bn-editor,
+.ProseMirror {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif !important;
+}
+
+.bn-container code,
+.bn-editor code,
+.ProseMirror code {
+  font-family: 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', Consolas, 'Courier New', monospace !important;
+}
+
+/* Ensure BlockNote editor has accessible name for screen readers */
+.bn-editor[contenteditable="true"][role="textbox"]:not([aria-label]) {
+  /* This will be set by BlockNoteView's ariaLabel prop */
+}

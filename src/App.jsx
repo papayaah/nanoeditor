@@ -12,30 +12,25 @@ import {
   UnnestBlockButton,
   CreateLinkButton
 } from '@blocknote/react';
-import { PDFExporter, pdfDefaultSchemaMappings } from '@blocknote/xl-pdf-exporter';
-import * as ReactPDF from '@react-pdf/renderer';
 import '@blocknote/mantine/style.css';
-import { MantineProvider } from '@mantine/core';
 import { 
   ChevronLeft, 
-  FileText, 
-  Code, 
-  Copy, 
-  FileDown, 
-  Plus, 
   X,
-  Moon,
-  Sun,
-  Settings,
-  Check,
-  Sparkles,
-  Trash2
+  Check
 } from 'lucide-react';
-import { loadDocument, saveDocument, createDocument, deleteDocument, getAllDocuments } from './db';
+import { loadDocument } from './db';
 import { WriterPrompt } from './components/WriterPrompt';
 import { RewriteButton } from './components/RewriteButton';
-import { DocumentInfo } from './components/DocumentInfo';
 import { StreamingBlockIndicator } from './components/StreamingBlockIndicator';
+import { SettingsMenu } from './components/SettingsMenu';
+import { ChromeAiSetup } from './components/ChromeAiSetup';
+import { Sidebar } from './components/Sidebar';
+import { useDocuments } from './hooks/useDocuments';
+import { useMarkdown } from './hooks/useMarkdown';
+import { useSettings } from './hooks/useSettings';
+import { useAI } from './hooks/useAI';
+import { useMarkdownPaste } from './hooks/useMarkdownPaste';
+import { usePdfExport } from './hooks/usePdfExport';
 import './App.css';
 
 function Editor({ docId, onSave, onExportPdf, darkMode }) {
@@ -84,87 +79,16 @@ function Editor({ docId, onSave, onExportPdf, darkMode }) {
   }, [editor, initialContent, isReady]);
 
   // Handle paste events to convert markdown
-  useEffect(() => {
-    if (!editor || !isReady) return;
+  useMarkdownPaste(editor, isReady);
 
-    const handlePaste = async (event) => {
-      const pastedText = event.clipboardData?.getData('text/plain');
-      if (!pastedText) return;
-
-      // Check if pasted text looks like markdown (has markdown syntax)
-      const hasMarkdownSyntax = /^#{1,6}\s|^\*\*|^\*|^-\s|^\d+\.\s|^>\s|^```/m.test(pastedText);
-
-      if (hasMarkdownSyntax) {
-        event.preventDefault();
-        
-        try {
-          // Convert markdown to blocks using BlockNote's built-in parser
-          const blocks = editor.tryParseMarkdownToBlocks(pastedText);
-          
-          // Get current cursor position
-          const currentBlock = editor.getTextCursorPosition().block;
-          
-          // Insert the blocks at current position
-          editor.insertBlocks(blocks, currentBlock, 'after');
-          
-          // Remove current block if it's empty
-          const blockContent = currentBlock.content;
-          if (!blockContent || (Array.isArray(blockContent) && blockContent.length === 0)) {
-            editor.removeBlocks([currentBlock]);
-          }
-        } catch (error) {
-          // If parsing fails, let default paste behavior happen
-        }
-      }
-    };
-
-    const editorElement = editor.domElement;
-    if (editorElement) {
-      editorElement.addEventListener('paste', handlePaste);
-      return () => {
-        editorElement.removeEventListener('paste', handlePaste);
-      };
-    }
-  }, [editor, isReady]);
+  // Expose PDF export function
+  usePdfExport(editor, isReady, onExportPdf);
 
   const handleChange = () => {
     if (!editor || !isReady) return;
     const content = editor.document;
     onSave(content);
   };
-
-  // Expose PDF export function
-  useEffect(() => {
-    if (editor && isReady && onExportPdf) {
-      onExportPdf.current = async (docTitle) => {
-        try {
-          // Create the PDF exporter
-          const exporter = new PDFExporter(editor.schema, pdfDefaultSchemaMappings);
-          
-          // Convert the blocks to a react-pdf document
-          const pdfDocument = await exporter.toReactPDFDocument(editor.document);
-          
-          // Use react-pdf to render and download the PDF
-          const pdfBlob = await ReactPDF.pdf(pdfDocument).toBlob();
-          
-          // Create download link
-          const url = URL.createObjectURL(pdfBlob);
-          const a = document.createElement('a');
-          a.href = url;
-          a.download = `${docTitle}.pdf`;
-          document.body.appendChild(a);
-          a.click();
-          document.body.removeChild(a);
-          URL.revokeObjectURL(url);
-          
-          console.log('PDF exported successfully');
-        } catch (error) {
-          console.error('Error exporting to PDF:', error);
-          throw error;
-        }
-      };
-    }
-  }, [editor, isReady, onExportPdf]);
 
   if (!isReady) {
     return <div style={{ padding: '60px', color: '#9b9a97' }}>Loading...</div>;
@@ -213,195 +137,52 @@ function Editor({ docId, onSave, onExportPdf, darkMode }) {
 }
 
 function App() {
-  const [currentDocId, setCurrentDocId] = useState(null);
-  const [documents, setDocuments] = useState([]);
-  const [showMarkdown, setShowMarkdown] = useState(false);
-  const [markdown, setMarkdown] = useState('');
-  const [showSidebar, setShowSidebar] = useState(() => {
-    const saved = localStorage.getItem('showSidebar');
-    return saved ? JSON.parse(saved) : false;
-  });
-  const [showSettings, setShowSettings] = useState(false);
-  const [darkMode, setDarkMode] = useState(() => {
-    const saved = localStorage.getItem('darkMode');
-    return saved ? JSON.parse(saved) : false;
-  });
-  const [aiAvailable, setAiAvailable] = useState(null);
-  const [showAiModal, setShowAiModal] = useState(false);
-  const [docInfoCollapsed, setDocInfoCollapsed] = useState(() => {
-    const saved = localStorage.getItem('docInfoCollapsed');
-    return saved ? JSON.parse(saved) : false;
-  });
-  const [deleteToast, setDeleteToast] = useState(null);
-  const [deleteConfirmId, setDeleteConfirmId] = useState(null);
   const exportPdfRef = useRef(null);
+  
+  // Custom hooks
+  const {
+    currentDocId,
+    documents,
+    deleteConfirmId,
+    deleteToast,
+    getDocTitle,
+    handleSave,
+    handleNewDocument,
+    handleSelectDocument,
+    handleDeleteClick,
+    handleCancelDelete,
+    handleConfirmDelete,
+  } = useDocuments();
 
-  useEffect(() => {
-    localStorage.setItem('darkMode', JSON.stringify(darkMode));
-    document.documentElement.setAttribute('data-theme', darkMode ? 'dark' : 'light');
-  }, [darkMode]);
+  const {
+    showMarkdown,
+    markdown,
+    toggleMarkdown,
+    copyMarkdown,
+    setShowMarkdown,
+  } = useMarkdown();
 
-  useEffect(() => {
-    localStorage.setItem('showSidebar', JSON.stringify(showSidebar));
-  }, [showSidebar]);
+  const {
+    showSidebar,
+    setShowSidebar,
+    darkMode,
+    setDarkMode,
+    docInfoCollapsed,
+    setDocInfoCollapsed,
+  } = useSettings();
 
-  useEffect(() => {
-    localStorage.setItem('docInfoCollapsed', JSON.stringify(docInfoCollapsed));
-  }, [docInfoCollapsed]);
-
-  useEffect(() => {
-    const handleClickOutside = (e) => {
-      if (showSettings && !e.target.closest('.floating-settings')) {
-        setShowSettings(false);
-      }
-    };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, [showSettings]);
-
-  useEffect(() => {
-    loadDocuments();
-    checkAIAvailability();
-  }, []);
-
-  const checkAIAvailability = async () => {
-    try {
-      if (typeof self === 'undefined') {
-        setAiAvailable(false);
-        return;
-      }
-
-      let writerOk = false;
-      let rewriterOk = false;
-
-      // Check Writer API
-      if ('Writer' in self) {
-        try {
-          const writerAvailability = await self.Writer.availability();
-          writerOk = writerAvailability === 'available' || writerAvailability === 'downloadable';
-        } catch (error) {
-          // Writer check failed
-        }
-      }
-
-      // Check Rewriter API
-      if ('Rewriter' in self) {
-        try {
-          const rewriterAvailability = await self.Rewriter.availability();
-          rewriterOk = rewriterAvailability === 'available' || rewriterAvailability === 'downloadable';
-        } catch (error) {
-          // Rewriter check failed
-        }
-      }
-      
-      setAiAvailable(writerOk && rewriterOk);
-    } catch (error) {
-      setAiAvailable(false);
-    }
-  };
-
-  const loadDocuments = async () => {
-    const docs = await getAllDocuments();
-    setDocuments(docs);
-    if (docs.length > 0 && !currentDocId) {
-      setCurrentDocId(docs[0].id);
-    } else if (docs.length === 0) {
-      const newDoc = await createDocument();
-      setDocuments([newDoc]);
-      setCurrentDocId(newDoc.id);
-    }
-  };
-
-  const handleSave = async (content) => {
-    if (!currentDocId) return;
-    await saveDocument(currentDocId, content);
-    // Update just the title in the current documents array without reloading
-    const updatedDocs = documents.map(doc => {
-      if (doc.id === currentDocId) {
-        const title = getDocTitle({ ...doc, content: JSON.stringify(content) });
-        return { ...doc, title, content: JSON.stringify(content) };
-      }
-      return doc;
-    });
-    setDocuments(updatedDocs);
-  };
-
-  const handleNewDocument = async () => {
-    const newDoc = await createDocument();
-    await loadDocuments();
-    setCurrentDocId(newDoc.id);
-  };
-
-  const handleSelectDocument = (docId) => {
-    setCurrentDocId(docId);
-    setShowMarkdown(false);
-  };
-
-  const handleDeleteClick = (docId, e) => {
-    e.stopPropagation();
-    
-    if (documents.length === 1) {
-      setDeleteToast({ type: 'error', message: 'Cannot delete last document' });
-      setTimeout(() => setDeleteToast(null), 2000);
-      return;
-    }
-    
-    // Show confirmation
-    setDeleteConfirmId(docId);
-    // Auto-cancel after 3 seconds
-    setTimeout(() => {
-      setDeleteConfirmId(null);
-    }, 3000);
-  };
-
-  const handleCancelDelete = (e) => {
-    e.stopPropagation();
-    setDeleteConfirmId(null);
-  };
-
-  const handleConfirmDelete = async (docId, e) => {
-    e.stopPropagation();
-    
-    setDeleteConfirmId(null);
-    await deleteDocument(docId);
-    await loadDocuments();
-    if (currentDocId === docId) {
-      const docs = await getAllDocuments();
-      setCurrentDocId(docs[0]?.id || null);
-    }
-    
-    setDeleteToast({ type: 'success', message: 'Document deleted' });
-    setTimeout(() => setDeleteToast(null), 2000);
-  };
-
-  const toggleMarkdown = async () => {
-    if (!showMarkdown && currentDocId) {
-      const content = await loadDocument(currentDocId);
-      const md = content.map(block => {
-        if (block.type === 'heading') {
-          const level = '#'.repeat(block.props?.level || 1);
-          return `${level} ${block.content?.[0]?.text || ''}\n`;
-        }
-        return block.content?.[0]?.text || '';
-      }).join('\n');
-      setMarkdown(md);
-    }
-    setShowMarkdown(!showMarkdown);
-  };
-
-  const [showCopied, setShowCopied] = useState(false);
-
-  const copyMarkdown = async () => {
-    await navigator.clipboard.writeText(markdown);
-    setShowCopied(true);
-    setTimeout(() => setShowCopied(false), 2000);
-  };
+  const {
+    aiAvailable,
+    showAiModal,
+    setShowAiModal,
+  } = useAI();
 
   const exportToPdf = async () => {
     if (!currentDocId || !exportPdfRef.current) return;
     
     try {
-      const docTitle = getDocTitle(documents.find(doc => doc.id === currentDocId)) || 'document';
+      const currentDoc = documents.find(doc => doc.id === currentDocId);
+      const docTitle = getDocTitle(currentDoc) || 'document';
       await exportPdfRef.current(docTitle);
     } catch (error) {
       console.error('Error exporting to PDF:', error);
@@ -409,35 +190,7 @@ function App() {
     }
   };
 
-  const getDocTitle = (doc) => {
-    if (doc.title && doc.title !== 'Untitled Document') {
-      return doc.title;
-    }
-    const content = JSON.parse(doc.content || '[]');
-    if (content.length > 0 && content[0].content) {
-      const firstBlock = content[0].content;
-      if (Array.isArray(firstBlock) && firstBlock.length > 0) {
-        return firstBlock[0].text || 'Untitled';
-      }
-    }
-    return 'Untitled';
-  };
 
-  const formatDate = (date) => {
-    const d = new Date(date);
-    const now = new Date();
-    const diffMs = now - d;
-    const diffMins = Math.floor(diffMs / 60000);
-    const diffHours = Math.floor(diffMs / 3600000);
-    const diffDays = Math.floor(diffMs / 86400000);
-
-    if (diffMins < 1) return 'Just now';
-    if (diffMins < 60) return `${diffMins}m ago`;
-    if (diffHours < 24) return `${diffHours}h ago`;
-    if (diffDays < 7) return `${diffDays}d ago`;
-    
-    return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-  };
 
   if (!currentDocId) {
     return <div className="loading">Loading...</div>;
@@ -455,175 +208,36 @@ function App() {
           <span>{deleteToast.message}</span>
         </div>
       )}
-      {showAiModal && (
-        <div className="modal-overlay" onClick={() => setShowAiModal(false)}>
-          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-            <button className="modal-close" onClick={() => setShowAiModal(false)} aria-label="Close modal">
-              <X size={20} />
-            </button>
-            <div className="modal-header">
-              <Sparkles size={24} />
-              <h2>Enable Chrome AI Features</h2>
-            </div>
-            <p className="modal-description">
-              This app uses Chrome's built-in AI features for writing and rewriting. Follow these steps to enable them:
-            </p>
-            <ol className="modal-steps">
-              <li>
-                <strong>Install Chrome Canary</strong>
-                <span>Version 127 or later required</span>
-              </li>
-              <li>
-                <strong>Open Chrome Flags</strong>
-                <code>chrome://flags/</code>
-              </li>
-              <li>
-                <strong>Enable Optimization Guide</strong>
-                <code>#optimization-guide-on-device-model</code>
-                <span>Enables on-device AI model (~4GB download)</span>
-              </li>
-              <li>
-                <strong>Enable Writer API</strong>
-                <code>#writer-api-for-gemini-nano</code>
-              </li>
-              <li>
-                <strong>Enable Rewriter API</strong>
-                <code>#rewriter-api-for-gemini-nano</code>
-              </li>
-              <li>
-                <strong>Restart Chrome</strong>
-                <span>Model will download automatically after restart</span>
-              </li>
-            </ol>
-            <div className="modal-footer">
-              <a 
-                href="https://developer.chrome.com/docs/ai/built-in" 
-                target="_blank" 
-                rel="noopener noreferrer"
-                className="modal-link"
-              >
-                View Full Documentation →
-              </a>
-              <button onClick={() => setShowAiModal(false)} className="modal-button">
-                Got it
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      {showAiModal && <ChromeAiSetup onClose={() => setShowAiModal(false)} />}
       <button onClick={() => setShowSidebar(!showSidebar)} className="sidebar-toggle-btn" aria-label={showSidebar ? 'Hide sidebar' : 'Show sidebar'}>
         <ChevronLeft size={18} style={{ transform: showSidebar ? 'rotate(0deg)' : 'rotate(180deg)', transition: 'transform 0.3s' }} />
       </button>
       
-      <div className={`sidebar ${showSidebar ? 'open' : 'closed'}`}>
-        <div className="sidebar-header">
-          <h2>Documents</h2>
-          <button onClick={handleNewDocument} className="new-doc-btn">
-            <Plus size={16} /> New
-          </button>
-        </div>
-        <div className="document-list">
-          {documents.map((doc) => (
-            <div
-              key={doc.id}
-              className={`doc-item ${currentDocId === doc.id ? 'active' : ''}`}
-              onClick={() => handleSelectDocument(doc.id)}
-            >
-              <div className="doc-item-content">
-                <div className="doc-title-row">
-                  <span className="doc-title">{getDocTitle(doc)}</span>
-                  <div className="delete-btn-container">
-                    {deleteConfirmId === doc.id ? (
-                      <>
-                        <button
-                          className="cancel-btn"
-                          onClick={handleCancelDelete}
-                          aria-label="Cancel delete"
-                        >
-                          <X size={16} />
-                        </button>
-                        <button
-                          className="confirm-btn"
-                          onClick={(e) => handleConfirmDelete(doc.id, e)}
-                          aria-label="Confirm delete"
-                        >
-                          <Check size={16} />
-                        </button>
-                      </>
-                    ) : (
-                      <button
-                        className="delete-btn"
-                        onClick={(e) => handleDeleteClick(doc.id, e)}
-                        aria-label="Delete document"
-                      >
-                        <Trash2 size={16} />
-                      </button>
-                    )}
-                  </div>
-                </div>
-                {doc.updatedAt && (
-                  <span className="doc-date">{formatDate(doc.updatedAt)}</span>
-                )}
-              </div>
-            </div>
-          ))}
-        </div>
-        
-        <DocumentInfo 
-          currentDocId={currentDocId}
-          documents={documents}
-          collapsed={docInfoCollapsed}
-          onToggle={() => setDocInfoCollapsed(!docInfoCollapsed)}
-        />
-      </div>
+      <Sidebar
+        documents={documents}
+        currentDocId={currentDocId}
+        showSidebar={showSidebar}
+        deleteConfirmId={deleteConfirmId}
+        docInfoCollapsed={docInfoCollapsed}
+        onSelectDocument={(docId) => handleSelectDocument(docId, () => setShowMarkdown(false))}
+        onNewDocument={handleNewDocument}
+        onDeleteClick={handleDeleteClick}
+        onConfirmDelete={handleConfirmDelete}
+        onCancelDelete={handleCancelDelete}
+        onToggleDocInfo={() => setDocInfoCollapsed(!docInfoCollapsed)}
+      />
       
       <div className="main-content">
-        <div className="floating-settings">
-          <button onClick={() => setShowSettings(!showSettings)} className="settings-toggle" aria-label="Open settings menu">
-            <Settings size={20} />
-            {aiAvailable === false && (
-              <span className="ai-status-badge" title="AI features unavailable">!</span>
-            )}
-          </button>
-          {showSettings && (
-            <div className="settings-menu">
-              {aiAvailable === false && (
-                <button onClick={() => setShowAiModal(true)} className="settings-menu-btn ai-warning">
-                  <Sparkles size={16} />
-                  <span>AI Features Unavailable</span>
-                </button>
-              )}
-              {aiAvailable === true && (
-                <div className="ai-status-enabled">
-                  <Sparkles size={14} color="#10b981" />
-                  <span>AI Features Enabled</span>
-                </div>
-              )}
-              {!showSidebar && (
-                <button onClick={() => setShowSidebar(true)} className="settings-menu-btn">
-                  <ChevronLeft size={16} />
-                  <span>Show Sidebar</span>
-                </button>
-              )}
-              <button onClick={toggleMarkdown} className="settings-menu-btn">
-                {showMarkdown ? <FileText size={16} /> : <Code size={16} />}
-                <span>{showMarkdown ? 'Editor' : 'Markdown'}</span>
-              </button>
-              <button onClick={copyMarkdown} className="settings-menu-btn">
-                {showCopied ? <Check size={16} color="#10b981" /> : <Copy size={16} />}
-                <span>{showCopied ? 'Copied!' : 'Copy'}</span>
-              </button>
-              <button onClick={exportToPdf} className="settings-menu-btn">
-                <FileDown size={16} />
-                <span>Export PDF</span>
-              </button>
-              <button onClick={() => setDarkMode(!darkMode)} className="settings-menu-btn">
-                {darkMode ? <Sun size={16} /> : <Moon size={16} />}
-                <span>{darkMode ? 'Light Mode' : 'Dark Mode'}</span>
-              </button>
-            </div>
-          )}
-        </div>
+        <SettingsMenu
+          showMarkdown={showMarkdown}
+          onToggleMarkdown={() => toggleMarkdown(currentDocId)}
+          onCopyMarkdown={copyMarkdown}
+          onExportPdf={exportToPdf}
+          darkMode={darkMode}
+          onToggleDarkMode={() => setDarkMode(!darkMode)}
+          aiAvailable={aiAvailable}
+          onShowAiModal={() => setShowAiModal(true)}
+        />
         <div className="editor-container">
           <div className="editor-wrapper">
             {showMarkdown ? (

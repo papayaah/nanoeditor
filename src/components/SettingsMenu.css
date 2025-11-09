@@ -1,0 +1,135 @@
+.floating-settings {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  z-index: 1000;
+}
+
+.github-link {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: none;
+  background: #24292e;
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  text-decoration: none;
+  z-index: 1000;
+}
+
+.github-link:hover {
+  background: #1a1e22;
+  transform: scale(1.05);
+}
+
+:root[data-theme="dark"] .github-link {
+  background: #ffffff;
+  color: #24292e;
+}
+
+:root[data-theme="dark"] .github-link:hover {
+  background: #f0f0f0;
+}
+
+.settings-toggle {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: 1px solid var(--border-color);
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  position: relative;
+}
+
+.settings-toggle:hover {
+  background: var(--button-hover);
+  transform: scale(1.05);
+}
+
+.ai-status-badge {
+  position: absolute;
+  top: -2px;
+  right: -2px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #ef4444;
+  color: white;
+  font-size: 11px;
+  font-weight: bold;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid var(--bg-primary);
+}
+
+.settings-menu {
+  position: absolute;
+  top: 50px;
+  right: 0;
+  background: var(--bg-primary);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 8px;
+  min-width: 180px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.settings-menu-btn {
+  padding: 8px 12px;
+  border: none;
+  background: transparent;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 13px;
+  color: var(--text-primary);
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: background 0.15s;
+  text-align: left;
+}
+
+.settings-menu-btn:hover {
+  background: var(--button-hover);
+}
+
+.settings-menu-btn.ai-warning {
+  color: #ef4444;
+  font-weight: 600;
+}
+
+.ai-status-enabled {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 12px;
+  background: #f0fdf4;
+  border-radius: 6px;
+  margin-bottom: 8px;
+  font-size: 12px;
+  font-weight: 500;
+  color: #166534;
+}
+
+:root[data-theme="dark"] .ai-status-enabled {
+  background: #14532d;
+  color: #86efac;
+}
