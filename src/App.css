@@ -592,34 +592,4 @@ body {
   }
 }
 
-/* Skeleton loader styles */
-.editor-skeleton p {
-  font-size: 14px;
-  color: var(--text-secondary);
-  margin-bottom: 24px;
-}
 
-.skeleton-line {
-  height: 20px;
-  width: 100%;
-  background: linear-gradient(90deg, var(--bg-secondary) 25%, var(--hover-bg) 50%, var(--bg-secondary) 75%);
-  background-size: 200% 100%;
-  animation: skeleton-loading 1.5s ease-in-out infinite;
-  border-radius: 4px;
-  margin-bottom: 16px;
-}
-
-.skeleton-title {
-  height: 32px;
-  width: 100px;
-  margin-bottom: 24px;
-}
-
-.skeleton-short {
-  width: 80%;
-}
-
-@keyframes skeleton-loading {
-  0% { background-position: 200% 0; }
-  100% { background-position: -200% 0; }
-}

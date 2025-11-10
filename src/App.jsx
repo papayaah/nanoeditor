@@ -1,4 +1,4 @@
-import { useRef, lazy, Suspense, useEffect } from 'react';
+import { useRef, lazy, Suspense } from 'react';
 import { 
   ChevronLeft, 
   X,
