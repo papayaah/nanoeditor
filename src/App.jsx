@@ -23,6 +23,7 @@ if (typeof window !== 'undefined') {
 
 function App() {
   const [currentRoute, setCurrentRoute] = useState(window.location.pathname);
+  const [postSettings, setPostSettings] = useState(null);
 
   // Simple routing
   useEffect(() => {
@@ -70,18 +71,28 @@ function App() {
     setDocInfoCollapsed,
   } = useSettings();
 
+  const [postSettingsCollapsed, setPostSettingsCollapsed] = useState(() => {
+    try {
+      const stored = localStorage.getItem('postSettingsCollapsed');
+      return stored === 'true';
+    } catch {
+      return false;
+    }
+  });
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('postSettingsCollapsed', postSettingsCollapsed.toString());
+    } catch {}
+  }, [postSettingsCollapsed]);
+
   const {
     aiAvailable,
     showAiModal,
     setShowAiModal,
   } = useAI();
 
-  // Route: /posts
-  if (currentRoute === '/posts') {
-    return <PostHelper onNavigate={navigate} />;
-  }
-
-  if (!currentDocId) {
+  if (!currentDocId && currentRoute !== '/posts') {
     return <Shell />;
   }
 
@@ -108,13 +119,21 @@ function App() {
         showSidebar={showSidebar}
         deleteConfirmId={deleteConfirmId}
         docInfoCollapsed={docInfoCollapsed}
-        onSelectDocument={(docId) => handleSelectDocument(docId, () => setShowMarkdown(false))}
+        postSettingsCollapsed={postSettingsCollapsed}
+        onSelectDocument={(docId) => {
+          handleSelectDocument(docId, () => setShowMarkdown(false));
+          navigate('/');
+        }}
         onNewDocument={handleNewDocument}
+        onNewPost={() => window.handleNewPost?.()}
         onDeleteClick={handleDeleteClick}
         onConfirmDelete={handleConfirmDelete}
         onCancelDelete={handleCancelDelete}
         onToggleDocInfo={() => setDocInfoCollapsed(!docInfoCollapsed)}
+        onTogglePostSettings={() => setPostSettingsCollapsed(!postSettingsCollapsed)}
         onNavigate={navigate}
+        currentRoute={currentRoute}
+        postSettings={postSettings}
       />
       
       <div className="main-content">
@@ -129,25 +148,33 @@ function App() {
           aiAvailable={aiAvailable}
           onShowAiModal={() => setShowAiModal(true)}
         />
-        <div className="editor-container">
-          <div className="editor-wrapper">
-            {showMarkdown ? (
-              <div className="markdown-preview">
-                <pre>{markdown}</pre>
-              </div>
-            ) : (
-              <Suspense fallback={<Shell />}>
-                <BlockNoteEditor 
-                  key={currentDocId} 
-                  docId={currentDocId} 
-                  onSave={handleSave} 
-                  onExportPdf={exportPdfRef} 
-                  darkMode={darkMode}
-                />
-              </Suspense>
-            )}
+        {currentRoute === '/posts' ? (
+          <PostHelper 
+            onNewPost={() => window.handleNewPost?.()} 
+            darkMode={darkMode}
+            onSettingsExport={setPostSettings}
+          />
+        ) : (
+          <div className="editor-container">
+            <div className="editor-wrapper">
+              {showMarkdown ? (
+                <div className="markdown-preview">
+                  <pre>{markdown}</pre>
+                </div>
+              ) : (
+                <Suspense fallback={<Shell />}>
+                  <BlockNoteEditor 
+                    key={currentDocId} 
+                    docId={currentDocId} 
+                    onSave={handleSave} 
+                    onExportPdf={exportPdfRef} 
+                    darkMode={darkMode}
+                  />
+                </Suspense>
+              )}
+            </div>
           </div>
-        </div>
+        )}
       </div>
     </div>
   );

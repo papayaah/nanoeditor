@@ -19,7 +19,7 @@ export const useRewriter = () => {
     checkAI();
   }, []);
 
-  const rewriteText = async (text, tone, sharedContext, stripEmojis = false, onChunk = null) => {
+  const rewriteText = async (text, tone, format, length, sharedContext, stripEmojis = false, onChunk = null) => {
     if (!rewriterAvailable) {
       throw new Error('Rewriter API is not available');
     }
@@ -30,11 +30,11 @@ export const useRewriter = () => {
     // Each call gets its own instance to ensure fresh, independent results
     let rewriter;
     if (availability === 'available' || availability === 'downloadable') {
-      // Rewriter API only accepts 'as-is', 'more-formal', 'more-casual'
+      // Rewriter API accepts: tone (as-is, more-formal, more-casual), format (as-is, markdown, plain-text), length (shorter, as-is, longer)
       const config = {
         tone: tone,
-        format: 'as-is',
-        length: 'as-is',
+        format: format,
+        length: length,
         sharedContext: sharedContext
       };
       

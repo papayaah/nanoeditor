@@ -1,5 +1,6 @@
-import { Plus, Trash2, Check, X, Sparkles } from 'lucide-react';
+import { Plus, Trash2, Check, X, FileText, Megaphone } from 'lucide-react';
 import { DocumentInfo } from './DocumentInfo';
+import { PostSettings } from './PostSettings';
 
 export const Sidebar = ({ 
   documents, 
@@ -7,14 +8,20 @@ export const Sidebar = ({
   showSidebar, 
   deleteConfirmId,
   docInfoCollapsed,
+  postSettingsCollapsed,
   onSelectDocument, 
-  onNewDocument, 
+  onNewDocument,
+  onNewPost,
   onDeleteClick,
   onConfirmDelete,
   onCancelDelete,
   onToggleDocInfo,
-  onNavigate
+  onTogglePostSettings,
+  onNavigate,
+  currentRoute,
+  postSettings
 }) => {
+  const isPostsMode = currentRoute === '/posts';
   const getDocTitle = (doc) => {
     // Use the saved title directly
     return doc.title || 'Untitled';
@@ -39,24 +46,48 @@ export const Sidebar = ({
   return (
     <div className={`sidebar ${showSidebar ? 'open' : 'closed'}`}>
       <div className="sidebar-header">
-        <h2>Documents</h2>
-        <div className="sidebar-header-actions">
+        <h2>{isPostsMode ? 'Social Posts' : 'Documents'}</h2>
+        {isPostsMode ? (
+          <button onClick={onNewPost} className="new-doc-btn">
+            <Plus size={16} /> New
+          </button>
+        ) : (
           <button onClick={onNewDocument} className="new-doc-btn">
             <Plus size={16} /> New
           </button>
-          {onNavigate && (
-            <button 
-              onClick={() => onNavigate('/posts')} 
-              className="toggle-mode-btn"
-              title="Toggle Post Helper"
-            >
-              <Sparkles size={16} />
-            </button>
-          )}
-        </div>
+        )}
       </div>
-      <div className="document-list">
-        {documents.map((doc) => (
+      
+      {onNavigate && (
+        <div className="mode-toggle-container">
+          <div className="mode-toggle">
+            <button
+              className={`mode-toggle-btn ${!isPostsMode ? 'active' : ''}`}
+              onClick={() => onNavigate('/')}
+              aria-label="Document mode"
+            >
+              <FileText size={16} />
+              <span>Documents</span>
+            </button>
+            <button
+              className={`mode-toggle-btn ${isPostsMode ? 'active' : ''}`}
+              onClick={() => onNavigate('/posts')}
+              aria-label="Social Post mode"
+            >
+              <Megaphone size={16} />
+              <span>Posts</span>
+            </button>
+          </div>
+        </div>
+      )}
+      
+      {isPostsMode ? (
+        <div className="document-list">
+          {/* Empty spacer for posts mode to push settings to bottom */}
+        </div>
+      ) : (
+        <div className="document-list">
+          {documents.map((doc) => (
           <div
             key={doc.id}
             className={`doc-item ${currentDocId === doc.id ? 'active' : ''}`}
@@ -99,15 +130,26 @@ export const Sidebar = ({
               )}
             </div>
           </div>
-        ))}
-      </div>
+          ))}
+        </div>
+      )}
       
-      <DocumentInfo 
-        currentDocId={currentDocId}
-        documents={documents}
-        collapsed={docInfoCollapsed}
-        onToggle={onToggleDocInfo}
-      />
+      {isPostsMode ? (
+        postSettings && (
+          <PostSettings 
+            {...postSettings}
+            collapsed={postSettingsCollapsed}
+            onToggle={onTogglePostSettings}
+          />
+        )
+      ) : (
+        <DocumentInfo 
+          currentDocId={currentDocId}
+          documents={documents}
+          collapsed={docInfoCollapsed}
+          onToggle={onToggleDocInfo}
+        />
+      )}
     </div>
   );
 };

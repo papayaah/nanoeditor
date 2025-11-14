@@ -1,3 +1,74 @@
 /* Combined styles entry point */
 @import './App.css';
 @import './components/SettingsMenu.css';
+
+/* Mode Toggle */
+.mode-toggle-container {
+  padding: 12px;
+  border-bottom: 1px solid #e5e5e5;
+}
+
+.mode-toggle {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  background-color: #f9fafb;
+  padding: 4px;
+  border-radius: 8px;
+  border: 1px solid #e5e5e5;
+}
+
+.mode-toggle-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 10px 12px;
+  background-color: transparent;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 500;
+  color: #6b7280;
+  transition: all 0.2s;
+}
+
+.mode-toggle-btn:hover {
+  background-color: #e5e5e5;
+  color: #37352f;
+}
+
+.mode-toggle-btn.active {
+  background-color: white;
+  color: #37352f;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+  border: 1px solid #e5e5e5;
+}
+
+.mode-toggle-btn span {
+  font-size: 13px;
+}
+
+/* Dark mode support for mode toggle */
+:root[data-theme="dark"] .mode-toggle-container {
+  border-bottom-color: #404040;
+}
+
+:root[data-theme="dark"] .mode-toggle {
+  background-color: #1a1a1a;
+}
+
+:root[data-theme="dark"] .mode-toggle-btn {
+  color: #9b9a97;
+}
+
+:root[data-theme="dark"] .mode-toggle-btn:hover {
+  background-color: #404040;
+}
+
+:root[data-theme="dark"] .mode-toggle-btn.active {
+  background-color: #2d2d2d;
+  color: #e5e5e5;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+}

@@ -68,6 +68,7 @@ body {
   justify-content: space-between;
   align-items: center;
   position: relative;
+  min-height: 68px;
 }
 
 .sidebar-header h2 {
@@ -76,6 +77,9 @@ body {
   color: var(--text-primary);
   text-transform: uppercase;
   letter-spacing: 0.5px;
+  line-height: 1;
+  display: flex;
+  align-items: center;
 }
 
 .sidebar-header-actions {
@@ -103,24 +107,49 @@ body {
   opacity: 0.8;
 }
 
-.toggle-mode-btn {
-  padding: 6px 8px;
-  background: #f3e8ff;
-  color: #7c3aed;
-  border: 1px solid #a78bfa;
-  border-radius: 4px;
+.mode-toggle-container {
+  padding: 12px 8px;
+  border-top: 1px solid var(--border-color);
+}
+
+.mode-toggle {
+  display: flex;
+  background: var(--bg-tertiary);
+  border-radius: 8px;
+  padding: 4px;
+  gap: 4px;
+}
+
+.mode-toggle-btn {
+  flex: 1;
+  padding: 8px 12px;
+  background: transparent;
+  border: none;
+  border-radius: 6px;
   cursor: pointer;
   font-size: 13px;
   font-weight: 500;
+  color: var(--text-secondary);
   transition: all 0.2s;
   display: flex;
   align-items: center;
   justify-content: center;
+  gap: 6px;
 }
 
-.toggle-mode-btn:hover {
-  background: #e9d5ff;
-  border-color: #9333ea;
+.mode-toggle-btn:hover {
+  background: var(--hover-bg);
+  color: var(--text-primary);
+}
+
+.mode-toggle-btn.active {
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.mode-toggle-btn svg {
+  flex-shrink: 0;
 }
 
 .document-list {

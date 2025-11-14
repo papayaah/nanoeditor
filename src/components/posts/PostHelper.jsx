@@ -1,14 +1,30 @@
 import { useState, useEffect } from 'react';
-import { Sparkles, Copy, Check, ArrowLeft, HelpCircle, RefreshCw } from 'lucide-react';
+import { Sparkles, Copy, Check, RefreshCw, HelpCircle } from 'lucide-react';
 import { useRewriter } from '../../hooks/useRewriter';
 import { useWriter } from '../../hooks/useWriter';
 import './PostHelper.css';
 
-export const PostHelper = ({ onNavigate }) => {
+export const PostHelper = ({ onNewPost, onSettingsExport }) => {
   const [inputText, setInputText] = useState('');
   const [history, setHistory] = useState([]); // Array of { id, text, suggestions: ['', '', ''], isGenerating }
   const [copiedId, setCopiedId] = useState(null);
   const [lastGeneratedText, setLastGeneratedText] = useState('');
+
+  // Handle new post from sidebar
+  useEffect(() => {
+    if (onNewPost) {
+      window.handleNewPost = () => {
+        setInputText('');
+        setHistory([]);
+        setLastGeneratedText('');
+      };
+    }
+    return () => {
+      if (window.handleNewPost) {
+        delete window.handleNewPost;
+      }
+    };
+  }, [onNewPost]);
   const [tone, setTone] = useState(() => {
     try {
       const stored = localStorage.getItem('postHelperTone');
@@ -85,6 +101,14 @@ export const PostHelper = ({ onNavigate }) => {
       return '';
     }
   });
+  const [useCurrentSettings, setUseCurrentSettings] = useState(() => {
+    try {
+      const stored = localStorage.getItem('postHelperUseCurrentSettings');
+      return stored === 'true';
+    } catch {
+      return false;
+    }
+  });
   
   const {
     rewriterAvailable,
@@ -107,12 +131,47 @@ export const PostHelper = ({ onNavigate }) => {
   // Track if any generation is in progress
   const isGenerating = history.length > 0 && history[0].isGenerating;
 
-  // Initialize Writer API length on first load
+  // Convert length values when switching between APIs
   useEffect(() => {
-    if (apiMode === 'writer' && !['short', 'medium', 'long'].includes(length)) {
-      setLength('short');
+    if (apiMode === 'writer') {
+      // Convert Rewriter lengths to Writer lengths
+      if (length === 'shorter') setLength('short');
+      else if (length === 'longer') setLength('long');
+      else if (length === 'as-is') setLength('medium');
+      else if (!['short', 'medium', 'long'].includes(length)) {
+        setLength('short');
+      }
+    } else {
+      // Convert Writer lengths to Rewriter lengths
+      if (length === 'short') setLength('shorter');
+      else if (length === 'long') setLength('longer');
+      else if (length === 'medium') setLength('as-is');
+      else if (!['shorter', 'as-is', 'longer'].includes(length)) {
+        setLength('as-is');
+      }
     }
-  }, [apiMode, length, setLength]);
+  }, [apiMode]);
+
+  // Export settings to parent
+  useEffect(() => {
+    if (onSettingsExport) {
+      onSettingsExport({
+        apiMode, setApiMode,
+        tone, setTone,
+        format, setFormat,
+        length, setLength,
+        style, setStyle,
+        customStyle, setCustomStyle,
+        useEmoticons, setUseEmoticons,
+        stream, setStream,
+        temperature, setTemperature,
+        topP, setTopP,
+        seed, setSeed,
+        useCurrentSettings, setUseCurrentSettings,
+        isGenerating
+      });
+    }
+  }, [apiMode, tone, format, length, style, customStyle, useEmoticons, stream, temperature, topP, seed, useCurrentSettings, isGenerating, onSettingsExport]);
 
   // Save settings
   useEffect(() => {
@@ -157,6 +216,8 @@ export const PostHelper = ({ onNavigate }) => {
     } catch {}
   }, [apiMode]);
 
+
+
   useEffect(() => {
     try {
       localStorage.setItem('postHelperStyle', style);
@@ -168,6 +229,12 @@ export const PostHelper = ({ onNavigate }) => {
       localStorage.setItem('postHelperCustomStyle', customStyle);
     } catch {}
   }, [customStyle]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('postHelperUseCurrentSettings', useCurrentSettings.toString());
+    } catch {}
+  }, [useCurrentSettings]);
 
   // Sync Writer API tone with PostHelper tone
   useEffect(() => {
@@ -360,13 +427,13 @@ export const PostHelper = ({ onNavigate }) => {
         console.log('=== Rewriter API ===');
         console.log('Shared Context:', sharedContext);
         console.log('User Text:', text);
-        console.log('Settings:', { tone, format: 'as-is', length: 'as-is' });
+        console.log('Settings:', { tone, format, length });
 
         // Note: Chrome AI API queues these internally, so they complete sequentially
         const results = await Promise.all(
           [0, 1, 2].map((index) => {
             console.log(`Starting Rewriter generation ${index + 1}`);
-            return rewriteText(text, tone, sharedContext, !useEmoticons, stream ? (streamedText) => {
+            return rewriteText(text, tone, format, length, sharedContext, !useEmoticons, stream ? (streamedText) => {
               setHistory(prev => 
                 prev.map(entry => 
                   entry.id === entryId
@@ -420,21 +487,24 @@ export const PostHelper = ({ onNavigate }) => {
   const handleRegenerate = async (entry) => {
     if (isGenerating) return;
 
-    // Restore settings from this entry
-    const savedSettings = entry.settings;
-    if (savedSettings) {
-      setApiMode(savedSettings.apiMode);
-      setTone(savedSettings.tone);
-      if (savedSettings.format) setFormat(savedSettings.format);
-      setLength(savedSettings.length);
-      if (savedSettings.style) setStyle(savedSettings.style);
-      if (savedSettings.customStyle) setCustomStyle(savedSettings.customStyle);
-      setUseEmoticons(savedSettings.useEmoticons);
-      setStream(savedSettings.stream);
-      
-      // Wait a tick for state to update
-      await new Promise(resolve => setTimeout(resolve, 0));
+    // Only restore settings if useCurrentSettings is false
+    if (!useCurrentSettings) {
+      const savedSettings = entry.settings;
+      if (savedSettings) {
+        setApiMode(savedSettings.apiMode);
+        setTone(savedSettings.tone);
+        if (savedSettings.format) setFormat(savedSettings.format);
+        setLength(savedSettings.length);
+        if (savedSettings.style) setStyle(savedSettings.style);
+        if (savedSettings.customStyle) setCustomStyle(savedSettings.customStyle);
+        setUseEmoticons(savedSettings.useEmoticons);
+        setStream(savedSettings.stream);
+        
+        // Wait a tick for state to update
+        await new Promise(resolve => setTimeout(resolve, 0));
+      }
     }
+    // If useCurrentSettings is true, just use whatever is currently in the sidebar
 
     // Regenerate with the same text and entry ID
     generateSuggestions(entry.text, entry.id);
@@ -454,230 +524,9 @@ export const PostHelper = ({ onNavigate }) => {
   }
 
   return (
-    <div className="post-helper">
-      {onNavigate && (
-        <button 
-          onClick={() => onNavigate('/')} 
-          className="back-btn"
-          aria-label="Back to editor"
-          title="Back to Document Editor"
-        >
-          <ArrowLeft size={18} />
-        </button>
-      )}
-      <div className="post-helper-header">
-        <div className="post-helper-title">
-          <Sparkles size={24} color="#a78bfa" />
-          <h1>Social Media Post Helper</h1>
-        </div>
-        <p>Write your sentence and get AI-powered suggestions for social media</p>
-      </div>
-
-      <div className="post-helper-settings">
-        <div className="settings-row">
-          <div className="setting-group">
-            <label htmlFor="post-api-mode">
-              API Mode
-              <span className="tooltip-icon" title="Writer API generates more varied and creative suggestions. Rewriter API produces more consistent rewrites.">
-                <HelpCircle size={14} />
-              </span>
-            </label>
-            <select 
-              id="post-api-mode"
-              value={apiMode} 
-              onChange={(e) => setApiMode(e.target.value)}
-              disabled={isGenerating}
-            >
-              <option value="writer">Writer (More Varied)</option>
-              <option value="rewriter">Rewriter (Consistent)</option>
-            </select>
-          </div>
-
-          <div className="setting-group">
-            <label htmlFor="post-tone">Tone</label>
-            <select 
-              id="post-tone"
-              value={tone} 
-              onChange={(e) => setTone(e.target.value)}
-              disabled={isGenerating}
-            >
-              <option value="more-casual">Casual</option>
-              <option value="as-is">Neutral</option>
-              <option value="more-formal">Formal</option>
-            </select>
-          </div>
-
-          {apiMode === 'writer' && (
-            <>
-              <div className="setting-group">
-                <label htmlFor="post-format">Format</label>
-                <select 
-                  id="post-format"
-                  value={format} 
-                  onChange={(e) => setFormat(e.target.value)}
-                  disabled={isGenerating}
-                >
-                  <option value="plain-text">Plain Text</option>
-                  <option value="markdown">Markdown</option>
-                </select>
-              </div>
-
-              <div className="setting-group">
-                <label htmlFor="post-length">Length</label>
-                <select 
-                  id="post-length"
-                  value={length} 
-                  onChange={(e) => setLength(e.target.value)}
-                  disabled={isGenerating}
-                >
-                  <option value="short">Short</option>
-                  <option value="medium">Medium</option>
-                  <option value="long">Long</option>
-                </select>
-              </div>
-            </>
-          )}
-
-          <div className="setting-group">
-            <label htmlFor="post-style">Style</label>
-            <select 
-              id="post-style"
-              value={style} 
-              onChange={(e) => setStyle(e.target.value)}
-              disabled={isGenerating}
-            >
-              <option value="default">Default</option>
-              <option value="humorous">Humorous</option>
-              <option value="witty">Witty</option>
-              <option value="sarcastic">Sarcastic</option>
-              <option value="inspirational">Inspirational</option>
-              <option value="motivational">Motivational</option>
-              <option value="dramatic">Dramatic</option>
-              <option value="mysterious">Mysterious</option>
-              <option value="scary">Scary</option>
-              <option value="angry">Angry</option>
-              <option value="excited">Excited</option>
-              <option value="calm">Calm</option>
-              <option value="professional">Professional</option>
-              <option value="friendly">Friendly</option>
-              <option value="persuasive">Persuasive</option>
-              <option value="storytelling">Storytelling</option>
-              <option value="educational">Educational</option>
-              <option value="controversial">Controversial</option>
-              <option value="clickbait">Clickbait</option>
-              <option value="custom">Custom...</option>
-            </select>
-          </div>
-
-          {style === 'custom' && (
-            <div className="setting-group custom-style-input">
-              <label htmlFor="post-custom-style">Custom Style</label>
-              <input
-                id="post-custom-style"
-                type="text"
-                placeholder="e.g., Make it poetic and romantic"
-                value={customStyle}
-                onChange={(e) => setCustomStyle(e.target.value)}
-                disabled={isGenerating}
-              />
-            </div>
-          )}
-
-          <div className="setting-group">
-            <label htmlFor="post-emoticons">Emoticons</label>
-            <select 
-              id="post-emoticons"
-              value={useEmoticons ? 'yes' : 'no'} 
-              onChange={(e) => setUseEmoticons(e.target.value === 'yes')}
-              disabled={isGenerating}
-            >
-              <option value="no">No Emojis</option>
-              <option value="yes">With Emojis</option>
-            </select>
-          </div>
-
-          <div className="setting-group">
-            <label htmlFor="post-stream">
-              Stream
-              <span className="tooltip-icon" title="Enable real-time streaming of AI responses. When on, you see text appear as it's generated. When off, you see complete results only.">
-                <HelpCircle size={14} />
-              </span>
-            </label>
-            <select 
-              id="post-stream"
-              value={stream ? 'yes' : 'no'} 
-              onChange={(e) => setStream(e.target.value === 'yes')}
-              disabled={isGenerating}
-            >
-              <option value="yes">On</option>
-              <option value="no">Off</option>
-            </select>
-          </div>
-        </div>
-
-        <div className="settings-row">
-          <div className="setting-group">
-            <label htmlFor="post-temperature">
-              Temperature
-              <span className="tooltip-icon" title="Controls randomness. Higher values (0.8-1.0) make output more creative and varied. Lower values (0.1-0.3) make it more focused and deterministic.">
-                <HelpCircle size={14} />
-              </span>
-            </label>
-            <input
-              id="post-temperature"
-              type="number"
-              min="0"
-              max="1"
-              step="0.1"
-              value={temperature}
-              onChange={(e) => setTemperature(e.target.value)}
-              disabled={isGenerating}
-            />
-          </div>
-
-          <div className="setting-group">
-            <label htmlFor="post-topP">
-              Top P
-              <span className="tooltip-icon" title="Nucleus sampling. Controls diversity by limiting to top probability tokens. 0.9 means consider tokens that make up 90% of probability mass.">
-                <HelpCircle size={14} />
-              </span>
-            </label>
-            <input
-              id="post-topP"
-              type="number"
-              min="0"
-              max="1"
-              step="0.1"
-              value={topP}
-              onChange={(e) => setTopP(e.target.value)}
-              disabled={isGenerating}
-            />
-          </div>
-
-          <div className="setting-group">
-            <label htmlFor="post-seed">
-              Seed
-              <span className="tooltip-icon" title="Random seed for reproducibility. Same seed with same input produces same output. Leave empty for random results.">
-                <HelpCircle size={14} />
-              </span>
-            </label>
-            <input
-              id="post-seed"
-              type="text"
-              placeholder="Optional"
-              value={seed}
-              onChange={(e) => setSeed(e.target.value)}
-              disabled={isGenerating}
-            />
-          </div>
-        </div>
-      </div>
-
-      <div className="post-helper-content">
-        <div className="post-helper-columns-header">
-          <h3>Your Text</h3>
-          <h3>AI Suggestions</h3>
-        </div>
+    <div className="editor-container">
+      <div className="editor-wrapper">
+        <div className="post-helper-content">
 
         <div className="current-input-row">
           <div className="current-input">
@@ -747,15 +596,31 @@ export const PostHelper = ({ onNavigate }) => {
                     <span className="setting-badge">{entry.settings.useEmoticons ? 'With Emojis' : 'No Emojis'}</span>
                   </div>
                 )}
-                <button
-                  onClick={() => handleRegenerate(entry)}
-                  className="regenerate-btn"
-                  disabled={isGenerating}
-                  title="Regenerate with same settings"
-                >
-                  <RefreshCw size={14} />
-                  Regenerate
-                </button>
+                <div className="regenerate-controls">
+                  <button
+                    onClick={() => handleRegenerate(entry)}
+                    className="regenerate-btn"
+                    disabled={isGenerating}
+                  >
+                    <RefreshCw size={14} />
+                    Regenerate
+                  </button>
+                  <label className="use-current-checkbox">
+                    <input
+                      type="checkbox"
+                      checked={useCurrentSettings}
+                      onChange={(e) => setUseCurrentSettings(e.target.checked)}
+                      disabled={isGenerating}
+                    />
+                    <span className="checkbox-label-text">
+                      Use current settings
+                      <span className="tooltip-wrapper">
+                        <HelpCircle size={12} className="help-icon" />
+                        <span className="tooltip-text">When checked, regenerate uses current sidebar settings instead of original settings</span>
+                      </span>
+                    </span>
+                  </label>
+                </div>
               </div>
               <div className="history-suggestions-item">
                 <div className="suggestions-grid">
@@ -797,6 +662,7 @@ export const PostHelper = ({ onNavigate }) => {
             </div>
           ))}
         </div>
+      </div>
       </div>
     </div>
   );
