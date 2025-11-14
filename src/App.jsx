@@ -1,4 +1,4 @@
-import { useRef, lazy, Suspense } from 'react';
+import { useRef, lazy, Suspense, useState, useEffect } from 'react';
 import { 
   ChevronLeft, 
   X,
@@ -10,6 +10,7 @@ import { SettingsMenu } from './components/SettingsMenu';
 const BlockNoteEditor = lazy(() => import('./components/BlockNoteEditor'));
 import { ChromeAiSetup } from './components/ChromeAiSetup';
 import { Sidebar } from './components/Sidebar';
+import { PostHelper } from './components/posts/PostHelper';
 import { useDocuments } from './hooks/useDocuments';
 import { useMarkdown } from './hooks/useMarkdown';
 import { useSettings } from './hooks/useSettings';
@@ -21,6 +22,21 @@ if (typeof window !== 'undefined') {
 }
 
 function App() {
+  const [currentRoute, setCurrentRoute] = useState(window.location.pathname);
+
+  // Simple routing
+  useEffect(() => {
+    const handlePopState = () => {
+      setCurrentRoute(window.location.pathname);
+    };
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, []);
+
+  const navigate = (path) => {
+    window.history.pushState({}, '', path);
+    setCurrentRoute(path);
+  };
   const exportPdfRef = useRef(null);
   
   // Custom hooks
@@ -60,6 +76,11 @@ function App() {
     setShowAiModal,
   } = useAI();
 
+  // Route: /posts
+  if (currentRoute === '/posts') {
+    return <PostHelper onNavigate={navigate} />;
+  }
+
   if (!currentDocId) {
     return <Shell />;
   }
@@ -93,6 +114,7 @@ function App() {
         onConfirmDelete={handleConfirmDelete}
         onCancelDelete={handleCancelDelete}
         onToggleDocInfo={() => setDocInfoCollapsed(!docInfoCollapsed)}
+        onNavigate={navigate}
       />
       
       <div className="main-content">

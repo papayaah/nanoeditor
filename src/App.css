@@ -78,6 +78,12 @@ body {
   letter-spacing: 0.5px;
 }
 
+.sidebar-header-actions {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+
 .new-doc-btn {
   padding: 6px 12px;
   background: var(--text-primary);
@@ -95,6 +101,26 @@ body {
 
 .new-doc-btn:hover {
   opacity: 0.8;
+}
+
+.toggle-mode-btn {
+  padding: 6px 8px;
+  background: #f3e8ff;
+  color: #7c3aed;
+  border: 1px solid #a78bfa;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 500;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.toggle-mode-btn:hover {
+  background: #e9d5ff;
+  border-color: #9333ea;
 }
 
 .document-list {

@@ -1,4 +1,4 @@
-import { Plus, Trash2, Check, X } from 'lucide-react';
+import { Plus, Trash2, Check, X, Sparkles } from 'lucide-react';
 import { DocumentInfo } from './DocumentInfo';
 
 export const Sidebar = ({ 
@@ -12,7 +12,8 @@ export const Sidebar = ({
   onDeleteClick,
   onConfirmDelete,
   onCancelDelete,
-  onToggleDocInfo
+  onToggleDocInfo,
+  onNavigate
 }) => {
   const getDocTitle = (doc) => {
     // Use the saved title directly
@@ -39,9 +40,20 @@ export const Sidebar = ({
     <div className={`sidebar ${showSidebar ? 'open' : 'closed'}`}>
       <div className="sidebar-header">
         <h2>Documents</h2>
-        <button onClick={onNewDocument} className="new-doc-btn">
-          <Plus size={16} /> New
-        </button>
+        <div className="sidebar-header-actions">
+          <button onClick={onNewDocument} className="new-doc-btn">
+            <Plus size={16} /> New
+          </button>
+          {onNavigate && (
+            <button 
+              onClick={() => onNavigate('/posts')} 
+              className="toggle-mode-btn"
+              title="Toggle Post Helper"
+            >
+              <Sparkles size={16} />
+            </button>
+          )}
+        </div>
       </div>
       <div className="document-list">
         {documents.map((doc) => (
