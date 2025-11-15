@@ -61,14 +61,13 @@ body {
 }
 
 .sidebar-header {
-  padding: 20px;
+  padding: 16px 20px;
   padding-left: 50px;
   border-bottom: 1px solid var(--border-color);
   display: flex;
   justify-content: space-between;
   align-items: center;
   position: relative;
-  min-height: 68px;
 }
 
 .sidebar-header h2 {
@@ -90,26 +89,26 @@ body {
 
 .new-doc-btn {
   padding: 6px 12px;
-  background: var(--text-primary);
-  color: var(--bg-primary);
+  background: var(--bg-primary);
+  color: var(--text-primary);
   border: none;
   border-radius: 4px;
   cursor: pointer;
   font-size: 13px;
   font-weight: 500;
-  transition: opacity 0.2s;
+  transition: background 0.2s;
   display: flex;
   align-items: center;
   gap: 4px;
 }
 
 .new-doc-btn:hover {
-  opacity: 0.8;
+  background: var(--hover-bg);
 }
 
 .mode-toggle-container {
   padding: 12px 8px;
-  border-top: 1px solid var(--border-color);
+  border-bottom: 1px solid var(--border-color);
 }
 
 .mode-toggle {
@@ -508,6 +507,7 @@ body {
   flex: 1;
   overflow-y: auto;
   overflow-x: hidden;
+  background-color: var(--bg-primary);
 }
 
 .editor-wrapper {
@@ -617,22 +617,85 @@ body {
   gap: 4px;
 }
 
-/* Override BlockNote's background to match our theme */
-:root[data-theme="dark"] .bn-container {
+/* Override BlockNote's colors to match our theme */
+.bn-container {
   background-color: var(--bg-primary) !important;
 }
 
-:root[data-theme="dark"] .bn-editor {
+.bn-editor {
   background-color: var(--bg-primary) !important;
+  color: var(--text-primary) !important;
 }
 
-/* Fix BlockNote placeholder wrapping - only target the editor content area */
+/* BlockNote text content */
 .bn-editor .ProseMirror {
   min-width: 600px;
+  color: var(--text-primary) !important;
 }
 
 .bn-editor .bn-block-content[data-content-type] {
   min-width: 600px;
+}
+
+/* BlockNote inline content (paragraphs, headings, etc.) */
+.bn-editor .bn-inline-content {
+  color: var(--text-primary) !important;
+}
+
+/* BlockNote default text color - all text elements */
+.bn-editor p,
+.bn-editor h1,
+.bn-editor h2,
+.bn-editor h3,
+.bn-editor h4,
+.bn-editor h5,
+.bn-editor h6,
+.bn-editor li,
+.bn-editor blockquote,
+.bn-editor span,
+.bn-editor div {
+  color: var(--text-primary) !important;
+}
+
+/* BlockNote list items */
+.bn-editor ul,
+.bn-editor ol {
+  color: var(--text-primary) !important;
+}
+
+/* BlockNote code blocks */
+.bn-editor code,
+.bn-editor pre {
+  color: var(--text-primary) !important;
+}
+
+/* BlockNote placeholder text */
+.bn-editor .ProseMirror .bn-block-outer[data-node-type] .placeholder::before,
+.bn-editor [data-placeholder]::before {
+  color: var(--text-secondary) !important;
+  opacity: 0.5;
+}
+
+/* Mantine components in BlockNote */
+.bn-editor .mantine-Text-root {
+  color: var(--text-primary) !important;
+}
+
+/* BlockNote side menu and formatting toolbar */
+.bn-side-menu,
+.bn-formatting-toolbar {
+  background-color: var(--bg-secondary) !important;
+  border-color: var(--border-color) !important;
+}
+
+.bn-side-menu button,
+.bn-formatting-toolbar button {
+  color: var(--text-primary) !important;
+}
+
+.bn-side-menu button:hover,
+.bn-formatting-toolbar button:hover {
+  background-color: var(--hover-bg) !important;
 }
 
 @media (max-width: 768px) {
@@ -648,3 +711,34 @@ body {
 }
 
 
+
+.list-controls {
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--border-color);
+  display: flex;
+  justify-content: flex-end;
+}
+
+.sort-toggle-btn {
+  padding: 6px 10px;
+  background: transparent;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  color: var(--text-secondary);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  transition: all 0.2s;
+}
+
+.sort-toggle-btn:hover {
+  background: var(--hover-bg);
+  color: var(--text-primary);
+}
+
+.sort-label {
+  font-size: 12px;
+  font-weight: 500;
+}

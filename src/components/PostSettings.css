@@ -22,7 +22,7 @@
 .post-settings-content .setting-group label {
   font-size: 10px;
   font-weight: 500;
-  color: #6b7280;
+  color: var(--text-secondary);
   display: flex;
   align-items: center;
   gap: 3px;
@@ -32,9 +32,10 @@
 .post-settings-content .setting-group input {
   padding: 4px 6px;
   font-size: 11px;
-  border: 1px solid #e5e5e5;
+  border: 1px solid var(--border-color);
   border-radius: 3px;
-  background-color: white;
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
   width: 100%;
 }
 
@@ -119,3 +120,5 @@
   align-items: center;
   gap: 3px;
 }
+
+/* Dark mode is now handled by CSS variables in App.css */

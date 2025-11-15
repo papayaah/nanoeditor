@@ -1,13 +1,13 @@
 .post-helper {
   display: flex;
   min-height: 100vh;
-  background-color: #f7f7f5;
+  background-color: var(--bg-secondary);
 }
 
 .post-helper-sidebar {
   width: 300px;
-  background-color: white;
-  border-right: 1px solid #e5e5e5;
+  background-color: var(--bg-primary);
+  border-right: 1px solid var(--border-color);
   padding: 20px;
   overflow-y: auto;
   position: fixed;
@@ -26,8 +26,8 @@
   left: 10px;
   top: 10px;
   z-index: 1000;
-  background-color: white;
-  border: 1px solid #e5e5e5;
+  background-color: var(--bg-primary);
+  border: 1px solid var(--border-color);
   border-radius: 50%;
   width: 36px;
   height: 36px;
@@ -47,7 +47,7 @@
 .sidebar-header {
   margin-bottom: 24px;
   padding-bottom: 16px;
-  border-bottom: 1px solid #e5e5e5;
+  border-bottom: 1px solid var(--border-color);
 }
 
 .sidebar-header .post-helper-title {
@@ -61,7 +61,7 @@
   margin: 0;
   font-size: 18px;
   font-weight: 600;
-  color: #37352f;
+  color: var(--text-primary);
 }
 
 .mode-toggle-container {
@@ -72,9 +72,9 @@
   display: flex;
   gap: 8px;
   padding: 4px;
-  background-color: #f9fafb;
+  background-color: var(--bg-tertiary);
   border-radius: 8px;
-  border: 1px solid #e5e5e5;
+  border: 1px solid var(--border-color);
 }
 
 .mode-toggle-btn {
@@ -87,17 +87,17 @@
   border: none;
   border-radius: 6px;
   cursor: pointer;
-  color: #6b7280;
+  color: var(--text-secondary);
   transition: all 0.2s;
 }
 
 .mode-toggle-btn:hover {
-  background-color: #f3f4f6;
-  color: #37352f;
+  background-color: var(--hover-bg);
+  color: var(--text-primary);
 }
 
 .mode-toggle-btn.active {
-  background-color: white;
+  background-color: var(--bg-primary);
   color: #7c3aed;
   box-shadow: 0 1px 3px rgba(0,0,0,0.1);
 }
@@ -170,7 +170,7 @@
 .setting-group label {
   font-size: 12px;
   font-weight: 500;
-  color: #6b7280;
+  color: var(--text-secondary);
   display: flex;
   align-items: center;
   gap: 6px;
@@ -179,9 +179,10 @@
 .setting-group select {
   padding: 8px 12px;
   font-size: 14px;
-  border: 1px solid #e5e5e5;
+  border: 1px solid var(--border-color);
   border-radius: 6px;
-  background-color: white;
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
   cursor: pointer;
   width: 100%;
 }
@@ -195,9 +196,10 @@
 .setting-group input[type="text"] {
   padding: 8px 12px;
   font-size: 14px;
-  border: 1px solid #e5e5e5;
+  border: 1px solid var(--border-color);
   border-radius: 6px;
-  background-color: white;
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
   width: 100%;
 }
 
@@ -236,10 +238,12 @@
   padding: 16px;
   font-size: 14px;
   font-family: inherit;
-  border: 1px solid #e5e5e5;
+  border: 1px solid var(--border-color);
   border-radius: 8px;
   resize: vertical;
   min-height: 100px;
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
 }
 
 .current-input textarea:focus {
@@ -264,7 +268,7 @@
   display: flex;
   gap: 12px;
   font-size: 12px;
-  color: #6b7280;
+  color: var(--text-secondary);
 }
 
 .input-counts .char-count,
@@ -292,7 +296,7 @@
 .submission-divider-line {
   flex: 1;
   height: 1px;
-  background-color: #e5e5e5;
+  background-color: var(--border-color);
 }
 
 .submission-divider-label {
@@ -312,8 +316,8 @@
 
 .history-text-item {
   padding: 16px;
-  background-color: #f9fafb;
-  border: 1px solid #e5e5e5;
+  background-color: var(--bg-tertiary);
+  border: 1px solid var(--border-color);
   border-radius: 8px;
   display: flex;
   flex-direction: column;
@@ -324,7 +328,7 @@
   margin: 0;
   font-size: 14px;
   line-height: 1.6;
-  color: #37352f;
+  color: var(--text-primary);
 }
 
 .history-text-meta {
@@ -353,8 +357,8 @@
 
 .history-suggestions-item {
   padding: 16px;
-  background-color: white;
-  border: 1px solid #e5e5e5;
+  background-color: var(--bg-primary);
+  border: 1px solid var(--border-color);
   border-radius: 8px;
 }
 
@@ -370,11 +374,11 @@
   gap: 6px;
   padding: 8px 12px;
   font-size: 12px;
-  background-color: white;
-  border: 1px solid #e5e5e5;
+  background-color: var(--bg-primary);
+  border: 1px solid var(--border-color);
   border-radius: 6px;
   cursor: pointer;
-  color: #6b7280;
+  color: var(--text-secondary);
   transition: all 0.2s;
   width: 100%;
   justify-content: center;
@@ -396,7 +400,7 @@
   align-items: flex-start;
   gap: 6px;
   font-size: 11px;
-  color: #6b7280;
+  color: var(--text-secondary);
   cursor: pointer;
   user-select: none;
 }
@@ -473,7 +477,7 @@
 
 .post-hint {
   font-size: 12px;
-  color: #9b9a97;
+  color: var(--text-secondary);
   min-height: 18px;
   text-align: right;
 }
@@ -484,8 +488,8 @@
   align-items: center;
   justify-content: center;
   padding: 60px 20px;
-  color: #9b9a97;
-  border: 2px dashed #e5e5e5;
+  color: var(--text-secondary);
+  border: 2px dashed var(--border-color);
   border-radius: 8px;
 }
 
@@ -522,8 +526,8 @@
 .suggestion-card {
   position: relative;
   padding: 16px;
-  background-color: #f9fafb;
-  border: 1px solid #e5e5e5;
+  background-color: var(--bg-tertiary);
+  border: 1px solid var(--border-color);
   border-radius: 8px;
   transition: border-color 0.2s;
 }
@@ -537,7 +541,7 @@
   padding-right: 40px;
   font-size: 14px;
   line-height: 1.6;
-  color: #37352f;
+  color: var(--text-primary);
 }
 
 .copy-btn {
@@ -545,8 +549,8 @@
   top: 12px;
   right: 12px;
   padding: 8px;
-  background-color: white;
-  border: 1px solid #e5e5e5;
+  background-color: var(--bg-primary);
+  border: 1px solid var(--border-color);
   border-radius: 6px;
   cursor: pointer;
   display: flex;
@@ -565,9 +569,9 @@
   gap: 12px;
   margin-top: 8px;
   padding-top: 8px;
-  border-top: 1px solid #e5e5e5;
+  border-top: 1px solid var(--border-color);
   font-size: 11px;
-  color: #9b9a97;
+  color: var(--text-secondary);
 }
 
 .char-count,
@@ -657,133 +661,4 @@
   }
 }
 
-/* Dark mode support */
-.post-helper.dark-mode {
-  background-color: #1a1a1a;
-  color: #e5e5e5;
-}
-
-.post-helper.dark-mode .post-helper-unavailable h2,
-.post-helper.dark-mode .post-helper-title h1,
-.post-helper.dark-mode .post-helper-columns-header h3 {
-  color: #e5e5e5;
-}
-
-.post-helper.dark-mode .post-helper-header p {
-  color: #9ca3af;
-}
-
-.post-helper.dark-mode .post-helper-settings {
-  background-color: #2d2d2d;
-  border-color: #404040;
-}
-
-.post-helper.dark-mode .setting-group label {
-  color: #9ca3af;
-}
-
-.post-helper.dark-mode .setting-group select,
-.post-helper.dark-mode .setting-group input {
-  background-color: #1a1a1a;
-  border-color: #404040;
-  color: #e5e5e5;
-}
-
-.post-helper.dark-mode .current-input textarea {
-  background-color: #2d2d2d;
-  border-color: #404040;
-  color: #e5e5e5;
-}
-
-.post-helper.dark-mode .current-input textarea::placeholder {
-  color: #6b7280;
-}
-
-.post-helper.dark-mode .input-counts,
-.post-helper.dark-mode .post-hint {
-  color: #9ca3af;
-}
-
-.post-helper.dark-mode .history-text-item {
-  background-color: #2d2d2d;
-  border-color: #404040;
-}
-
-.post-helper.dark-mode .history-text-item p {
-  color: #e5e5e5;
-}
-
-.post-helper.dark-mode .history-text-meta {
-  color: #6b7280;
-}
-
-.post-helper.dark-mode .setting-badge {
-  background-color: #3d2d5d;
-  color: #c4b5fd;
-}
-
-.post-helper.dark-mode .regenerate-btn {
-  background-color: #2d2d2d;
-  border-color: #404040;
-  color: #9ca3af;
-}
-
-.post-helper.dark-mode .regenerate-btn:hover:not(:disabled) {
-  border-color: #7c3aed;
-  color: #c4b5fd;
-  background-color: #3d2d5d;
-}
-
-.post-helper.dark-mode .history-suggestions-item {
-  background-color: #2d2d2d;
-  border-color: #404040;
-}
-
-.post-helper.dark-mode .suggestion-card {
-  background-color: #1a1a1a;
-  border-color: #404040;
-}
-
-.post-helper.dark-mode .suggestion-card p {
-  color: #e5e5e5;
-}
-
-.post-helper.dark-mode .suggestion-card:hover {
-  border-color: #7c3aed;
-}
-
-.post-helper.dark-mode .suggestion-meta {
-  border-top-color: #404040;
-  color: #6b7280;
-}
-
-.post-helper.dark-mode .copy-btn {
-  background-color: #2d2d2d;
-  border-color: #404040;
-}
-
-.post-helper.dark-mode .copy-btn:hover {
-  border-color: #7c3aed;
-  background-color: #3d2d5d;
-}
-
-.post-helper.dark-mode .post-empty {
-  border-color: #404040;
-  color: #6b7280;
-}
-
-.post-helper.dark-mode .skeleton-line {
-  background: linear-gradient(90deg, #3d3d3d 25%, #4d4d4d 50%, #3d3d3d 75%);
-  background-size: 200% 100%;
-}
-
-.post-helper.dark-mode .back-btn {
-  background-color: #2d2d2d;
-  border-color: #404040;
-  color: #e5e5e5;
-}
-
-.post-helper.dark-mode .back-btn:hover {
-  border-color: #7c3aed;
-  background-color: #3d2d5d;
-}
+/* Dark mode is now handled by CSS variables in App.css */

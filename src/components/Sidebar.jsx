@@ -1,4 +1,4 @@
-import { Plus, Trash2, Check, X, FileText, Megaphone } from 'lucide-react';
+import { Plus, Trash2, Check, X, FileText, Megaphone, Clock, CalendarPlus } from 'lucide-react';
 import { DocumentInfo } from './DocumentInfo';
 import { PostSettings } from './PostSettings';
 
@@ -28,7 +28,12 @@ export const Sidebar = ({
   onConfirmDeleteEntry,
   onCancelDeleteEntry,
   entryDeleteConfirmId,
-  getEntryTitle
+  getEntryTitle,
+  sortBy,
+  onToggleSort,
+  // Document sorting props
+  docSortBy,
+  onToggleDocSort
 }) => {
   const isPostsMode = currentRoute === '/posts';
   const getDocTitle = (doc) => {
@@ -54,19 +59,6 @@ export const Sidebar = ({
 
   return (
     <div className={`sidebar ${showSidebar ? 'open' : 'closed'}`}>
-      <div className="sidebar-header">
-        <h2>{isPostsMode ? 'Social Posts' : 'Documents'}</h2>
-        {isPostsMode ? (
-          <button onClick={onNewPost} className="new-doc-btn">
-            <Plus size={16} /> New
-          </button>
-        ) : (
-          <button onClick={onNewDocument} className="new-doc-btn">
-            <Plus size={16} /> New
-          </button>
-        )}
-      </div>
-      
       {onNavigate && (
         <div className="mode-toggle-container">
           <div className="mode-toggle">
@@ -89,6 +81,44 @@ export const Sidebar = ({
           </div>
         </div>
       )}
+      
+      <div className="sidebar-header">
+        <h2>{isPostsMode ? 'Social Posts' : 'Documents'}</h2>
+        <div className="sidebar-header-actions">
+          {isPostsMode ? (
+            <button onClick={onNewPost} className="new-doc-btn">
+              <Plus size={16} /> New
+            </button>
+          ) : (
+            <button onClick={onNewDocument} className="new-doc-btn">
+              <Plus size={16} /> New
+            </button>
+          )}
+        </div>
+      </div>
+      
+      <div className="list-controls">
+        {isPostsMode && onToggleSort && (
+          <button 
+            onClick={onToggleSort} 
+            className="sort-toggle-btn"
+            title={sortBy === 'updated' ? 'Sorted by last updated' : 'Sorted by date created'}
+          >
+            {sortBy === 'updated' ? <Clock size={14} /> : <CalendarPlus size={14} />}
+            <span className="sort-label">{sortBy === 'updated' ? 'Last updated' : 'Date created'}</span>
+          </button>
+        )}
+        {!isPostsMode && onToggleDocSort && (
+          <button 
+            onClick={onToggleDocSort} 
+            className="sort-toggle-btn"
+            title={docSortBy === 'updated' ? 'Sorted by last updated' : 'Sorted by date created'}
+          >
+            {docSortBy === 'updated' ? <Clock size={14} /> : <CalendarPlus size={14} />}
+            <span className="sort-label">{docSortBy === 'updated' ? 'Last updated' : 'Date created'}</span>
+          </button>
+        )}
+      </div>
       
       {isPostsMode ? (
         <div className="document-list">

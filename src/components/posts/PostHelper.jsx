@@ -9,7 +9,8 @@ export const PostHelper = ({
   currentEntryId,
   onEntrySaved,
   onSettingsExport,
-  onNewEntry
+  onNewEntry,
+  darkMode
 }) => {
   const [inputText, setInputText] = useState('');
   const [currentEntry, setCurrentEntry] = useState(null);
@@ -1146,9 +1147,10 @@ export const PostHelper = ({
   }
 
   return (
-    <div className="editor-container">
-      <div className="editor-wrapper">
-        <div className="post-helper-content">
+    <div className="post-helper">
+      <div className="editor-container">
+        <div className="editor-wrapper">
+          <div className="post-helper-content">
 
         <div className="current-input-row">
           <div className="current-input">
@@ -1356,6 +1358,7 @@ export const PostHelper = ({
             </div>
           );
         })()}
+        </div>
       </div>
       </div>
     </div>

@@ -5,39 +5,6 @@
   z-index: 1000;
 }
 
-.github-link {
-  position: fixed;
-  bottom: 20px;
-  right: 20px;
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  border: none;
-  background: #24292e;
-  color: #ffffff;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: all 0.2s;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
-  text-decoration: none;
-  z-index: 1000;
-}
-
-.github-link:hover {
-  background: #1a1e22;
-  transform: scale(1.05);
-}
-
-:root[data-theme="dark"] .github-link {
-  background: #ffffff;
-  color: #24292e;
-}
-
-:root[data-theme="dark"] .github-link:hover {
-  background: #f0f0f0;
-}
-
 .settings-toggle {
   width: 40px;
   height: 40px;

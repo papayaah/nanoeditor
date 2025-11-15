@@ -6,21 +6,42 @@ export const useDocuments = () => {
   const [documents, setDocuments] = useState([]);
   const [deleteConfirmId, setDeleteConfirmId] = useState(null);
   const [deleteToast, setDeleteToast] = useState(null);
+  const [sortBy, setSortBy] = useState(() => {
+    try {
+      return localStorage.getItem('documentsSortBy') || 'updated';
+    } catch {
+      return 'updated';
+    }
+  });
 
   useEffect(() => {
     loadDocuments();
-  }, []);
+  }, [sortBy]);
 
   const loadDocuments = async () => {
     const docs = await getAllDocuments();
-    setDocuments(docs);
-    if (docs.length > 0 && !currentDocId) {
-      setCurrentDocId(docs[0].id);
-    } else if (docs.length === 0) {
+    
+    // Sort based on current sort preference
+    const sortedDocs = sortBy === 'created' 
+      ? [...docs].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+      : docs; // Already sorted by updatedAt from getAllDocuments
+    
+    setDocuments(sortedDocs);
+    if (sortedDocs.length > 0 && !currentDocId) {
+      setCurrentDocId(sortedDocs[0].id);
+    } else if (sortedDocs.length === 0) {
       const newDoc = await createDocument();
       setDocuments([newDoc]);
       setCurrentDocId(newDoc.id);
     }
+  };
+
+  const toggleSort = () => {
+    const newSort = sortBy === 'updated' ? 'created' : 'updated';
+    setSortBy(newSort);
+    try {
+      localStorage.setItem('documentsSortBy', newSort);
+    } catch {}
   };
 
   const getDocTitle = (doc) => {
@@ -134,6 +155,7 @@ export const useDocuments = () => {
     documents,
     deleteConfirmId,
     deleteToast,
+    sortBy,
     setCurrentDocId,
     getDocTitle,
     handleSave,
@@ -142,5 +164,6 @@ export const useDocuments = () => {
     handleDeleteClick,
     handleCancelDelete,
     handleConfirmDelete,
+    toggleSort,
   };
 };

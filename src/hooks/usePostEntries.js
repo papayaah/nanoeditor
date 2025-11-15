@@ -72,13 +72,32 @@ export const usePostEntries = () => {
   const [entries, setEntries] = useState([]);
   const [deleteConfirmId, setDeleteConfirmId] = useState(null);
   const [deleteToast, setDeleteToast] = useState(null);
+  const [sortBy, setSortBy] = useState(() => {
+    try {
+      return localStorage.getItem('postEntriesSortBy') || 'updated';
+    } catch {
+      return 'updated';
+    }
+  });
 
   const loadEntries = async () => {
     const loadedEntries = await getAllPostEntries();
-    setEntries(loadedEntries);
-    if (loadedEntries.length > 0 && !currentEntryId) {
-      setCurrentEntryId(loadedEntries[0].id);
+    // Sort based on current sort preference
+    const sortedEntries = sortBy === 'created' 
+      ? [...loadedEntries].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+      : loadedEntries; // Already sorted by updatedAt from getAllPostEntries
+    setEntries(sortedEntries);
+    if (sortedEntries.length > 0 && !currentEntryId) {
+      setCurrentEntryId(sortedEntries[0].id);
     }
+  };
+
+  const toggleSort = () => {
+    const newSort = sortBy === 'updated' ? 'created' : 'updated';
+    setSortBy(newSort);
+    try {
+      localStorage.setItem('postEntriesSortBy', newSort);
+    } catch {}
   };
 
   const handleNewEntry = async () => {
@@ -101,10 +120,13 @@ export const usePostEntries = () => {
   useEffect(() => {
     const initialize = async () => {
       const loadedEntries = await getAllPostEntries();
-      setEntries(loadedEntries);
-      if (loadedEntries.length > 0 && !currentEntryId) {
-        setCurrentEntryId(loadedEntries[0].id);
-      } else if (loadedEntries.length === 0) {
+      const sortedEntries = sortBy === 'created' 
+        ? [...loadedEntries].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+        : loadedEntries;
+      setEntries(sortedEntries);
+      if (sortedEntries.length > 0 && !currentEntryId) {
+        setCurrentEntryId(sortedEntries[0].id);
+      } else if (sortedEntries.length === 0) {
         // Create first entry if none exist
         const newEntryId = Date.now();
         const newEntry = {
@@ -118,12 +140,15 @@ export const usePostEntries = () => {
         };
         await savePostEntry(newEntry);
         const updatedEntries = await getAllPostEntries();
-        setEntries(updatedEntries);
+        const sortedUpdated = sortBy === 'created' 
+          ? [...updatedEntries].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+          : updatedEntries;
+        setEntries(sortedUpdated);
         setCurrentEntryId(newEntryId);
       }
     };
     initialize();
-  }, []);
+  }, [sortBy]);
 
   const getEntryTitle = (entry) => {
     if (entry.text && entry.text.trim()) {
@@ -182,6 +207,7 @@ export const usePostEntries = () => {
     entries,
     deleteConfirmId,
     deleteToast,
+    sortBy,
     setCurrentEntryId,
     getEntryTitle,
     handleSaveEntry,
@@ -191,6 +217,7 @@ export const usePostEntries = () => {
     handleCancelDelete,
     handleConfirmDelete,
     loadEntries,
+    toggleSort,
   };
 };
 

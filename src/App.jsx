@@ -11,6 +11,7 @@ const BlockNoteEditor = lazy(() => import('./components/BlockNoteEditor'));
 import { ChromeAiSetup } from './components/ChromeAiSetup';
 import { Sidebar } from './components/Sidebar';
 import { PostHelper } from './components/posts/PostHelper';
+import { Footer } from './components/Footer';
 import { useDocuments } from './hooks/useDocuments';
 import { usePostEntries } from './hooks/usePostEntries';
 import { useMarkdown } from './hooks/useMarkdown';
@@ -47,6 +48,7 @@ function App() {
     documents,
     deleteConfirmId,
     deleteToast,
+    sortBy: docSortBy,
     getDocTitle,
     handleSave,
     handleNewDocument,
@@ -54,6 +56,7 @@ function App() {
     handleDeleteClick,
     handleCancelDelete,
     handleConfirmDelete,
+    toggleSort: toggleDocSort,
   } = useDocuments();
 
   const {
@@ -61,6 +64,7 @@ function App() {
     entries: postEntries,
     deleteConfirmId: entryDeleteConfirmId,
     deleteToast: entryDeleteToast,
+    sortBy,
     getEntryTitle,
     handleSaveEntry,
     handleNewEntry,
@@ -69,6 +73,7 @@ function App() {
     handleCancelDelete: handleCancelDeleteEntry,
     handleConfirmDelete: handleConfirmDeleteEntry,
     loadEntries,
+    toggleSort,
   } = usePostEntries();
 
   const {
@@ -167,6 +172,11 @@ function App() {
         onCancelDeleteEntry={handleCancelDeleteEntry}
         entryDeleteConfirmId={entryDeleteConfirmId}
         getEntryTitle={getEntryTitle}
+        sortBy={sortBy}
+        onToggleSort={toggleSort}
+        // Document sorting props
+        docSortBy={docSortBy}
+        onToggleDocSort={toggleDocSort}
       />
       
       <div className="main-content">
@@ -211,6 +221,7 @@ function App() {
           </div>
         )}
       </div>
+      <Footer />
     </div>
   );
 }

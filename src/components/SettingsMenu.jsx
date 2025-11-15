@@ -8,8 +8,7 @@ import {
   Moon, 
   Sun, 
   Sparkles, 
-  Check,
-  Github
+  Check
 } from 'lucide-react';
 import { useSettings } from '../hooks/useSettings';
 
@@ -99,16 +98,6 @@ export function SettingsMenu({
           </div>
         )}
       </div>
-      
-      <a 
-        href="https://github.com/papayaah/nanoeditor" 
-        target="_blank" 
-        rel="noopener noreferrer"
-        className="github-link"
-        aria-label="View on GitHub"
-      >
-        <Github size={20} />
-      </a>
     </>
   );
 }
