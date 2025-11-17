@@ -5,3 +5,5 @@ aieditor
 .vite
 .vercel
 .vscode
+*storybook.log
+storybook-static

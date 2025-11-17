@@ -7,7 +7,7 @@ import {
 import { Shell } from './Shell';
 import { SettingsMenu } from './components/SettingsMenu';
 
-const BlockNoteEditor = lazy(() => import('./components/documents/BlockNoteEditor'));
+const DocumentEditor = lazy(() => import('./components/documents/DocumentEditor'));
 import { ChromeAiSetup } from './components/ChromeAiSetup';
 import { Sidebar } from './components/Sidebar';
 import { PostCreator } from './components/posts/PostCreator';
@@ -208,7 +208,7 @@ function App() {
                 </div>
               ) : (
                 <Suspense fallback={<Shell />}>
-                  <BlockNoteEditor 
+                  <DocumentEditor 
                     key={currentDocId} 
                     docId={currentDocId} 
                     onSave={handleSave} 
