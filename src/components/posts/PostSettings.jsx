@@ -33,7 +33,7 @@ export const PostSettings = ({
       <div className="document-info-header" onClick={onToggle}>
         <span className="document-info-title">Post Settings</span>
         <button className="collapse-toggle" aria-label={collapsed ? 'Expand' : 'Collapse'}>
-          <ChevronDown size={16} style={{ transform: collapsed ? 'rotate(-90deg)' : 'rotate(0deg)', transition: 'transform 0.2s' }} />
+          <ChevronDown size={16} style={{ transform: collapsed ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.2s' }} />
         </button>
       </div>
       

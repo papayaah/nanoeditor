@@ -1,6 +1,6 @@
 import { Plus, Trash2, Check, X, FileText, Megaphone, Clock, CalendarPlus } from 'lucide-react';
-import { DocumentInfo } from './DocumentInfo';
-import { PostSettings } from './PostSettings';
+import { DocumentInfo } from './documents/DocumentInfo';
+import { PostSettings } from './posts/PostSettings';
 
 export const Sidebar = ({ 
   documents, 
@@ -59,6 +59,21 @@ export const Sidebar = ({
 
   return (
     <div className={`sidebar ${showSidebar ? 'open' : 'closed'}`}>
+      <div className="sidebar-header">
+        <h2>{isPostsMode ? 'Social Posts' : 'Documents'}</h2>
+        <div className="sidebar-header-actions">
+          {isPostsMode ? (
+            <button onClick={onNewPost} className="new-doc-btn">
+              <Plus size={16} /> New
+            </button>
+          ) : (
+            <button onClick={onNewDocument} className="new-doc-btn">
+              <Plus size={16} /> New
+            </button>
+          )}
+        </div>
+      </div>
+      
       {onNavigate && (
         <div className="mode-toggle-container">
           <div className="mode-toggle">
@@ -81,21 +96,6 @@ export const Sidebar = ({
           </div>
         </div>
       )}
-      
-      <div className="sidebar-header">
-        <h2>{isPostsMode ? 'Social Posts' : 'Documents'}</h2>
-        <div className="sidebar-header-actions">
-          {isPostsMode ? (
-            <button onClick={onNewPost} className="new-doc-btn">
-              <Plus size={16} /> New
-            </button>
-          ) : (
-            <button onClick={onNewDocument} className="new-doc-btn">
-              <Plus size={16} /> New
-            </button>
-          )}
-        </div>
-      </div>
       
       <div className="list-controls">
         {isPostsMode && onToggleSort && (

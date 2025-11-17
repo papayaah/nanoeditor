@@ -7,10 +7,10 @@ import {
 import { Shell } from './Shell';
 import { SettingsMenu } from './components/SettingsMenu';
 
-const BlockNoteEditor = lazy(() => import('./components/BlockNoteEditor'));
+const BlockNoteEditor = lazy(() => import('./components/documents/BlockNoteEditor'));
 import { ChromeAiSetup } from './components/ChromeAiSetup';
 import { Sidebar } from './components/Sidebar';
-import { PostHelper } from './components/posts/PostHelper';
+import { PostCreator } from './components/posts/PostCreator';
 import { Footer } from './components/Footer';
 import { useDocuments } from './hooks/useDocuments';
 import { usePostEntries } from './hooks/usePostEntries';
@@ -192,7 +192,7 @@ function App() {
           onShowAiModal={() => setShowAiModal(true)}
         />
         {currentRoute === '/posts' ? (
-          <PostHelper 
+          <PostCreator 
             currentEntryId={currentEntryId}
             onEntrySaved={loadEntries}
             onNewEntry={handleNewEntry}

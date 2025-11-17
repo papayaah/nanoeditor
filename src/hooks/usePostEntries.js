@@ -4,13 +4,30 @@ import { db } from '../db';
 export const savePostEntry = async (entry) => {
   try {
     const now = new Date();
+    
+    // Safe stringify with validation
+    const safeStringify = (value, fallback) => {
+      try {
+        if (value === undefined || value === null) {
+          return JSON.stringify(fallback);
+        }
+        const stringified = JSON.stringify(value);
+        // Validate by parsing it back
+        JSON.parse(stringified);
+        return stringified;
+      } catch (e) {
+        console.warn('Failed to stringify value, using fallback:', e);
+        return JSON.stringify(fallback);
+      }
+    };
+
     const entryData = {
       id: entry.id,
-      text: entry.text,
-      suggestions: JSON.stringify(entry.suggestions || []),
-      generations: JSON.stringify(entry.generations || []),
-      settings: JSON.stringify(entry.settings || {}),
-      submissions: JSON.stringify(entry.submissions || []),
+      text: entry.text || '',
+      suggestions: safeStringify(entry.suggestions, []),
+      generations: safeStringify(entry.generations, []),
+      settings: safeStringify(entry.settings, {}),
+      submissions: safeStringify(entry.submissions, []),
       isGenerating: entry.isGenerating || false,
       updatedAt: now
     };
@@ -34,17 +51,32 @@ export const savePostEntry = async (entry) => {
 export const getAllPostEntries = async () => {
   try {
     const entries = await db.postEntries.orderBy('updatedAt').reverse().toArray();
-    return entries.map(entry => ({
-      id: entry.id,
-      text: entry.text,
-      suggestions: JSON.parse(entry.suggestions || '[]'),
-      generations: JSON.parse(entry.generations || '[]'),
-      settings: JSON.parse(entry.settings || '{}'),
-      submissions: JSON.parse(entry.submissions || '[]'),
-      isGenerating: false, // Always load as not generating
-      createdAt: entry.createdAt,
-      updatedAt: entry.updatedAt
-    }));
+    return entries.map(entry => {
+      // Safe JSON parse with fallback
+      const safeParse = (jsonString, fallback) => {
+        try {
+          if (!jsonString || jsonString === 'undefined' || jsonString === 'null') {
+            return fallback;
+          }
+          return JSON.parse(jsonString);
+        } catch (e) {
+          console.warn('Failed to parse JSON, using fallback:', e);
+          return fallback;
+        }
+      };
+
+      return {
+        id: entry.id,
+        text: entry.text || '',
+        suggestions: safeParse(entry.suggestions, []),
+        generations: safeParse(entry.generations, []),
+        settings: safeParse(entry.settings, {}),
+        submissions: safeParse(entry.submissions, []),
+        isGenerating: false, // Always load as not generating
+        createdAt: entry.createdAt,
+        updatedAt: entry.updatedAt
+      };
+    });
   } catch (error) {
     console.error('Error loading post entries:', error);
     return [];
@@ -64,6 +96,48 @@ export const clearAllPostEntries = async () => {
     await db.postEntries.clear();
   } catch (error) {
     console.error('Error clearing post entries:', error);
+  }
+};
+
+export const repairCorruptedEntries = async () => {
+  try {
+    const entries = await db.postEntries.toArray();
+    let repairedCount = 0;
+    
+    for (const entry of entries) {
+      let needsRepair = false;
+      const repairedEntry = { ...entry };
+      
+      // Check and repair each JSON field
+      const fields = ['suggestions', 'generations', 'settings', 'submissions'];
+      const defaults = { suggestions: '[]', generations: '[]', settings: '{}', submissions: '[]' };
+      
+      for (const field of fields) {
+        try {
+          if (!entry[field] || entry[field] === 'undefined' || entry[field] === 'null') {
+            repairedEntry[field] = defaults[field];
+            needsRepair = true;
+          } else {
+            JSON.parse(entry[field]); // Test if valid
+          }
+        } catch (e) {
+          console.warn(`Repairing corrupted ${field} for entry ${entry.id}`);
+          repairedEntry[field] = defaults[field];
+          needsRepair = true;
+        }
+      }
+      
+      if (needsRepair) {
+        await db.postEntries.update(entry.id, repairedEntry);
+        repairedCount++;
+      }
+    }
+    
+    console.log(`Repaired ${repairedCount} corrupted entries`);
+    return repairedCount;
+  } catch (error) {
+    console.error('Error repairing corrupted entries:', error);
+    return 0;
   }
 };
 

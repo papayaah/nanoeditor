@@ -13,12 +13,12 @@ import {
   CreateLinkButton
 } from '@blocknote/react';
 import '@blocknote/mantine/style.css';
-import { loadDocument } from '../db';
+import { loadDocument } from '../../db';
 import { WriterPrompt } from './WriterPrompt';
 import { RewriteButton } from './RewriteButton';
 import { StreamingBlockIndicator } from './StreamingBlockIndicator';
-import { useMarkdownPaste } from '../hooks/useMarkdownPaste';
-import { usePdfExport } from '../hooks/usePdfExport';
+import { useMarkdownPaste } from '../../hooks/useMarkdownPaste';
+import { usePdfExport } from '../../hooks/usePdfExport';
 
 /**
  * BlockNoteEditor - The actual editor component with all BlockNote dependencies

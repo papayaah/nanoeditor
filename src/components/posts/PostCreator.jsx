@@ -1,11 +1,12 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Sparkles, Copy, Check, RefreshCw, HelpCircle } from 'lucide-react';
 import { useRewriter } from '../../hooks/useRewriter';
 import { useWriter } from '../../hooks/useWriter';
-import { getAllPostEntries, savePostEntry } from '../../hooks/usePostEntries';
-import './PostHelper.css';
+import { getAllPostEntries, savePostEntry, repairCorruptedEntries } from '../../hooks/usePostEntries';
+import ReactMarkdown from 'react-markdown';
+import './PostCreator.css';
 
-export const PostHelper = ({ 
+export const PostCreator = ({ 
   currentEntryId,
   onEntrySaved,
   onSettingsExport,
@@ -16,6 +17,31 @@ export const PostHelper = ({
   const [currentEntry, setCurrentEntry] = useState(null);
   const [copiedId, setCopiedId] = useState(null);
   const [lastGeneratedText, setLastGeneratedText] = useState('');
+  const textareaRef = useRef(null);
+
+  // Repair corrupted entries on mount
+  useEffect(() => {
+    repairCorruptedEntries();
+  }, []);
+
+  // Auto-resize textarea based on content
+  const adjustTextareaHeight = () => {
+    const textarea = textareaRef.current;
+    if (textarea) {
+      textarea.style.height = 'auto';
+      textarea.style.height = `${textarea.scrollHeight}px`;
+    }
+  };
+
+  // Adjust height when inputText changes
+  useEffect(() => {
+    adjustTextareaHeight();
+  }, [inputText]);
+
+  // Adjust height when component mounts or entry changes
+  useEffect(() => {
+    adjustTextareaHeight();
+  }, [currentEntry]);
 
   // Load current entry when it changes
   useEffect(() => {
@@ -1049,85 +1075,69 @@ export const PostHelper = ({
     // Rule 4: Regenerate with new settings - creates new submission within same post
     let forceNewSubmission = false;
     
-    if (useCurrentSettings) {
-      // If "Use current settings" is checked, compare current settings with last submission's settings
-      const allEntries = await getAllPostEntries();
-      const entry = allEntries.find(e => e.id === currentEntryId);
-      if (entry) {
-        const existingSubmissions = Array.isArray(entry.submissions) ? entry.submissions : [];
-        const lastSubmission = existingSubmissions[0];
-        
-        if (lastSubmission) {
-          const currentSettings = {
-            apiMode,
-            tone,
-            writerTone,
-            format,
-            length,
-            style,
-            customStyle,
-            useEmoticons,
-            stream,
-          };
-          
-          // Normalize settings for comparison (exclude writerTone since it's derived from tone)
-          const normalizeSettings = (settings) => {
-            const normalized = { ...settings };
-            delete normalized.writerTone;
-            return normalized;
-          };
-          
-          // Check if any settings have changed from last submission
-          const settingsChanged = 
-            JSON.stringify(normalizeSettings(lastSubmission.settings)) !== 
-            JSON.stringify(normalizeSettings(currentSettings));
-          
-          if (settingsChanged) {
-            // Rule 4: Settings changed - create new submission within same post
-            forceNewSubmission = true;
-          }
-          // If settings haven't changed, just add a new generation (forceNewSubmission stays false)
-        }
-      }
-    } else {
-      // If "Use current settings" is unchecked, restore original settings from last submission
-      const allEntries = await getAllPostEntries();
-      const entry = allEntries.find(e => e.id === currentEntryId);
-      if (entry) {
-        const existingSubmissions = Array.isArray(entry.submissions) ? entry.submissions : [];
-        const lastSubmission = existingSubmissions[0];
-        
-        if (lastSubmission && lastSubmission.settings) {
-          const savedSettings = lastSubmission.settings;
-          setApiMode(savedSettings.apiMode);
-          setTone(savedSettings.tone);
-          if (savedSettings.format) setFormat(savedSettings.format);
-          setLength(savedSettings.length);
-          if (savedSettings.style) setStyle(savedSettings.style);
-          if (savedSettings.customStyle !== undefined) setCustomStyle(savedSettings.customStyle);
-          setUseEmoticons(savedSettings.useEmoticons);
-          setStream(savedSettings.stream);
-          
-          // Wait a tick for state to update
-          await new Promise(resolve => setTimeout(resolve, 0));
-        }
-      }
-      // Just add a new generation (forceNewSubmission stays false)
-    }
-
-    // Always regenerate within the same post (never create new sidebar entry)
-    // Rule 2: New sidebar entry only happens when user clicks "New" button
-    // Get text from last submission, or fall back to currentEntry.text or inputText
+    // Load entries once for all operations
     const allEntries = await getAllPostEntries();
     const entry = allEntries.find(e => e.id === currentEntryId);
-    let textToRegenerate = currentEntry.text || inputText.trim();
     
-    if (entry) {
-      const existingSubmissions = Array.isArray(entry.submissions) ? entry.submissions : [];
-      const lastSubmission = existingSubmissions[0];
-      if (lastSubmission && lastSubmission.text) {
-        textToRegenerate = lastSubmission.text;
+    if (!entry) {
+      generateSuggestions(currentEntry.text || inputText.trim(), currentEntryId, false);
+      return;
+    }
+    
+    const existingSubmissions = Array.isArray(entry.submissions) ? entry.submissions : [];
+    const lastSubmission = existingSubmissions[0];
+    
+    if (useCurrentSettings && lastSubmission) {
+      // If "Use current settings" is checked, compare current settings with last submission's settings
+      const currentSettings = {
+        apiMode,
+        tone,
+        writerTone,
+        format,
+        length,
+        style,
+        customStyle,
+        useEmoticons,
+        stream,
+      };
+      
+      // Normalize settings for comparison (exclude writerTone since it's derived from tone)
+      const normalizeSettings = (settings) => {
+        const normalized = { ...settings };
+        delete normalized.writerTone;
+        return normalized;
+      };
+      
+      // Check if any settings have changed from last submission
+      const settingsChanged = 
+        JSON.stringify(normalizeSettings(lastSubmission.settings)) !== 
+        JSON.stringify(normalizeSettings(currentSettings));
+      
+      if (settingsChanged) {
+        // Rule 4: Settings changed - create new submission within same post
+        forceNewSubmission = true;
       }
+      // If settings haven't changed, just add a new generation (forceNewSubmission stays false)
+    } else if (!useCurrentSettings && lastSubmission && lastSubmission.settings) {
+      // If "Use current settings" is unchecked, restore original settings from last submission
+      const savedSettings = lastSubmission.settings;
+      setApiMode(savedSettings.apiMode);
+      setTone(savedSettings.tone);
+      if (savedSettings.format) setFormat(savedSettings.format);
+      setLength(savedSettings.length);
+      if (savedSettings.style) setStyle(savedSettings.style);
+      if (savedSettings.customStyle !== undefined) setCustomStyle(savedSettings.customStyle);
+      setUseEmoticons(savedSettings.useEmoticons);
+      setStream(savedSettings.stream);
+      
+      // Wait a tick for state to update
+      await new Promise(resolve => setTimeout(resolve, 0));
+    }
+
+    // Get text from last submission, or fall back to currentEntry.text or inputText
+    let textToRegenerate = currentEntry.text || inputText.trim();
+    if (lastSubmission && lastSubmission.text) {
+      textToRegenerate = lastSubmission.text;
     }
     
     generateSuggestions(textToRegenerate, currentEntryId, forceNewSubmission);
@@ -1135,8 +1145,8 @@ export const PostHelper = ({
 
   if (!aiAvailable) {
     return (
-      <div className="post-helper">
-        <div className="post-helper-unavailable">
+      <div className="post-creator">
+        <div className="post-creator-unavailable">
           <Sparkles size={48} color="#e5e5e5" />
           <h2>Chrome AI Not Available</h2>
           <p>This feature requires Chrome's built-in AI ({apiMode === 'writer' ? 'Writer' : 'Rewriter'} API).</p>
@@ -1147,14 +1157,15 @@ export const PostHelper = ({
   }
 
   return (
-    <div className="post-helper">
+    <div className="post-creator">
       <div className="editor-container">
         <div className="editor-wrapper">
-          <div className="post-helper-content">
+          <div className="post-creator-content">
 
         <div className="current-input-row">
           <div className="current-input">
             <textarea
+              ref={textareaRef}
               value={inputText}
               onChange={(e) => setInputText(e.target.value)}
               onKeyDown={(e) => {
@@ -1166,11 +1177,11 @@ export const PostHelper = ({
                     // Don't create a new sidebar entry - only "New Post" button does that
                     generateSuggestions(trimmedText, currentEntryId, true);
                     setLastGeneratedText(trimmedText);
+                    setInputText(''); // Clear input after submission
                   }
                 }
               }}
-              placeholder="Type your text here. Press Shift+Enter or Cmd+Enter to generate suggestions..."
-              rows={4}
+              placeholder="What would you like to post?"
               disabled={isGenerating}
             />
             <div className="input-meta">
@@ -1182,11 +1193,25 @@ export const PostHelper = ({
                   {inputText.trim() ? inputText.trim().split(/\s+/).length : 0} words
                 </span>
               </div>
-              <div className="post-hint">
-                {inputText.trim() && (
-                  <span>Press Shift+Enter or Cmd+Enter to generate suggestions</span>
-                )}
-              </div>
+              <button
+                className="submit-btn"
+                onClick={() => {
+                  const trimmedText = inputText.trim();
+                  if (trimmedText && !isGenerating) {
+                    generateSuggestions(trimmedText, currentEntryId, true);
+                    setLastGeneratedText(trimmedText);
+                    setInputText('');
+                  }
+                }}
+                disabled={!inputText.trim() || isGenerating}
+              >
+                <span className="submit-text">Generate</span>
+                <span className="submit-shortcut">
+                  <span className="shortcut-key">⌘</span>
+                  <span className="shortcut-plus">+</span>
+                  <span className="shortcut-key">↵</span>
+                </span>
+              </button>
             </div>
           </div>
             <div className="current-suggestions-placeholder">
@@ -1258,7 +1283,7 @@ export const PostHelper = ({
                     <div className="history-text-item">
                       {submission.text?.trim() && (
                         <>
-                          <p>{submission.text}</p>
+                          <p className="submission-text">{submission.text}</p>
                           <div className="history-text-meta">
                             <span className="char-count">
                               {submission.text.length} chars
@@ -1276,20 +1301,39 @@ export const PostHelper = ({
                           {submission.settings.apiMode === 'writer' && (
                             <span className="setting-badge">{submission.settings.length}</span>
                           )}
-                          <span className="setting-badge">{submission.settings.useEmoticons ? 'With Emojis' : 'No Emojis'}</span>
+                          {submission.settings.style && submission.settings.style !== 'default' && (
+                            <span className="setting-badge">
+                              {submission.settings.style === 'custom' && submission.settings.customStyle 
+                                ? submission.settings.customStyle 
+                                : submission.settings.style}
+                            </span>
+                          )}
                         </div>
                       )}
                       {/* Only show regenerate controls on the most recent submission */}
                       {submissionIndex === 0 && (
                         <div className="regenerate-controls">
-                          <button
-                            onClick={handleRegenerate}
-                            className="regenerate-btn"
-                            disabled={isGenerating}
-                          >
-                            <RefreshCw size={14} />
-                            Regenerate
-                          </button>
+                          <div className="regenerate-buttons">
+                            <button
+                              onClick={handleRegenerate}
+                              className="regenerate-btn"
+                              disabled={isGenerating}
+                            >
+                              <RefreshCw size={14} />
+                              Regenerate
+                            </button>
+                            <button
+                              onClick={() => {
+                                setInputText(submission.text);
+                              }}
+                              className="reuse-btn"
+                              disabled={isGenerating}
+                              title="Copy this text to input field for editing"
+                            >
+                              <Copy size={14} />
+                              Reuse
+                            </button>
+                          </div>
                           <label className="use-current-checkbox">
                             <input
                               type="checkbox"
@@ -1318,7 +1362,13 @@ export const PostHelper = ({
                               <div key={index} className="suggestion-card">
                                 {generation.suggestions && generation.suggestions[index] ? (
                                   <>
-                                    <p>{generation.suggestions[index]}</p>
+                                    <div className="suggestion-content">
+                                      {submission.settings?.format === 'markdown' ? (
+                                        <ReactMarkdown>{generation.suggestions[index]}</ReactMarkdown>
+                                      ) : (
+                                        <p>{generation.suggestions[index]}</p>
+                                      )}
+                                    </div>
                                     <div className="suggestion-meta">
                                       <span className="char-count">
                                         {generation.suggestions[index].length} chars

@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { Sparkles } from 'lucide-react';
-import { incrementAIGenerations } from '../db';
+import { incrementAIGenerations } from '../../db';
 
 // Helper functions for localStorage
 const getStoredSetting = (key, defaultValue) => {
