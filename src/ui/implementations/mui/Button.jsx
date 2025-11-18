@@ -1,10 +1,4 @@
-/**
- * Material-UI Button Adapter
- * Wraps MUI Button to match our interface
- */
-
-// Uncomment when MUI is installed:
-// import { Button as MuiButton } from '@mui/material';
+import { Button as MuiButton } from '@mui/material';
 
 export const Button = ({ 
   children, 
@@ -18,7 +12,7 @@ export const Button = ({
   // Map our variants to MUI variants
   const variantMap = {
     default: 'contained',
-    secondary: 'contained',
+    secondary: 'outlined',
     ghost: 'text',
     danger: 'contained'
   };
@@ -30,25 +24,17 @@ export const Button = ({
     lg: 'large'
   };
 
-  // Uncomment when MUI is installed:
-  // return (
-  //   <MuiButton
-  //     variant={variantMap[variant]}
-  //     size={sizeMap[size]}
-  //     onClick={onClick}
-  //     disabled={disabled}
-  //     className={className}
-  //     color={variant === 'danger' ? 'error' : variant === 'secondary' ? 'secondary' : 'primary'}
-  //     {...props}
-  //   >
-  //     {children}
-  //   </MuiButton>
-  // );
-
-  // Placeholder until MUI is installed
   return (
-    <button onClick={onClick} disabled={disabled} className={className} {...props}>
+    <MuiButton
+      variant={variantMap[variant]}
+      size={sizeMap[size]}
+      onClick={onClick}
+      disabled={disabled}
+      className={className}
+      color={variant === 'danger' ? 'error' : variant === 'secondary' ? 'secondary' : 'primary'}
+      {...props}
+    >
       {children}
-    </button>
+    </MuiButton>
   );
 };

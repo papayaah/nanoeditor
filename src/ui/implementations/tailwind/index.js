@@ -1,6 +1,6 @@
 /**
- * shadcn/ui Implementation
- * Beautiful, accessible components built with Radix UI and Tailwind CSS
+ * Tailwind CSS Implementation
+ * Pure utility-first CSS classes, no external component library needed
  */
 
 export { Button } from './Button';

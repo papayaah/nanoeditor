@@ -1,4 +1,6 @@
 import '@mantine/core/styles.css';
+import 'antd/dist/reset.css';
+import '../src/tailwind.css';
 import '../src/styles.css';
 import '../src/mantine-override.css';
 import { MantineProvider } from '@mantine/core';
@@ -8,12 +10,15 @@ export const globalTypes = {
   uiTheme: {
     name: 'UI Theme',
     description: 'Switch between UI implementations',
-    defaultValue: 'native',
+    defaultValue: 'mantine',
     toolbar: {
       icon: 'paintbrush',
       items: [
-        { value: 'native', title: 'Native HTML/CSS', icon: 'browser' },
         { value: 'mantine', title: 'Mantine UI', icon: 'component' },
+        { value: 'mui', title: 'Material-UI', icon: 'box' },
+        { value: 'antd', title: 'Ant Design', icon: 'grid' },
+        { value: 'shadcn', title: 'shadcn/ui', icon: 'star' },
+        { value: 'tailwind', title: 'Tailwind CSS', icon: 'lightning' },
       ],
       showName: true,
       dynamicTitle: true,

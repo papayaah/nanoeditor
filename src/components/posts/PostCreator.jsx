@@ -4,6 +4,11 @@ import { useRewriter } from '../../hooks/useRewriter';
 import { useWriter } from '../../hooks/useWriter';
 import { getAllPostEntries, savePostEntry, repairCorruptedEntries } from '../../hooks/usePostEntries';
 import ReactMarkdown from 'react-markdown';
+import * as MantineUI from '../../ui/implementations/mantine';
+import * as MuiUI from '../../ui/implementations/mui';
+import * as AntdUI from '../../ui/implementations/antd';
+import * as ShadcnUI from '../../ui/implementations/shadcn';
+import * as TailwindUI from '../../ui/implementations/tailwind';
 import './PostCreator.css';
 
 export const PostCreator = ({ 
@@ -11,8 +16,18 @@ export const PostCreator = ({
   onEntrySaved,
   onSettingsExport,
   onNewEntry,
-  darkMode
+  darkMode,
+  uiTheme = 'mantine' // Can be 'mantine', 'mui', 'antd', 'shadcn', or 'tailwind'
 }) => {
+  // Select UI implementation based on theme
+  const uiMap = {
+    mantine: MantineUI,
+    mui: MuiUI,
+    antd: AntdUI,
+    shadcn: ShadcnUI,
+    tailwind: TailwindUI
+  };
+  const UI = uiMap[uiTheme] || MantineUI;
   const [inputText, setInputText] = useState('');
   const [currentEntry, setCurrentEntry] = useState(null);
   const [copiedId, setCopiedId] = useState(null);
@@ -27,7 +42,7 @@ export const PostCreator = ({
   // Auto-resize textarea based on content
   const adjustTextareaHeight = () => {
     const textarea = textareaRef.current;
-    if (textarea) {
+    if (textarea && textarea.style && typeof textarea.scrollHeight === 'number') {
       textarea.style.height = 'auto';
       textarea.style.height = `${textarea.scrollHeight}px`;
     }
@@ -1164,10 +1179,10 @@ export const PostCreator = ({
 
         <div className="current-input-row">
           <div className="current-input">
-            <textarea
+            <UI.Textarea
               ref={textareaRef}
               value={inputText}
-              onChange={(e) => setInputText(e.target.value)}
+              onChange={setInputText}
               onKeyDown={(e) => {
                 if (e.key === 'Enter' && (e.shiftKey || e.metaKey) && inputText.trim()) {
                   e.preventDefault();
@@ -1193,7 +1208,7 @@ export const PostCreator = ({
                   {inputText.trim() ? inputText.trim().split(/\s+/).length : 0} words
                 </span>
               </div>
-              <button
+              <UI.Button
                 className="submit-btn"
                 onClick={() => {
                   const trimmedText = inputText.trim();
@@ -1211,7 +1226,7 @@ export const PostCreator = ({
                   <span className="shortcut-plus">+</span>
                   <span className="shortcut-key">↵</span>
                 </span>
-              </button>
+              </UI.Button>
             </div>
           </div>
             <div className="current-suggestions-placeholder">
@@ -1314,15 +1329,15 @@ export const PostCreator = ({
                       {submissionIndex === 0 && (
                         <div className="regenerate-controls">
                           <div className="regenerate-buttons">
-                            <button
+                            <UI.Button
                               onClick={handleRegenerate}
                               className="regenerate-btn"
                               disabled={isGenerating}
                             >
                               <RefreshCw size={14} />
                               Regenerate
-                            </button>
-                            <button
+                            </UI.Button>
+                            <UI.Button
                               onClick={() => {
                                 setInputText(submission.text);
                               }}
@@ -1332,13 +1347,12 @@ export const PostCreator = ({
                             >
                               <Copy size={14} />
                               Reuse
-                            </button>
+                            </UI.Button>
                           </div>
                           <label className="use-current-checkbox">
-                            <input
-                              type="checkbox"
+                            <UI.Switch
                               checked={useCurrentSettings}
-                              onChange={(e) => setUseCurrentSettings(e.target.checked)}
+                              onChange={setUseCurrentSettings}
                               disabled={isGenerating}
                             />
                             <span className="checkbox-label-text">
@@ -1377,7 +1391,7 @@ export const PostCreator = ({
                                         {generation.suggestions[index].trim().split(/\s+/).length} words
                                       </span>
                                     </div>
-                                    <button
+                                    <UI.IconButton
                                       onClick={() => handleCopy(generation.suggestions[index], currentEntry.id, `${generation.id}-${index}`)}
                                       className="copy-btn"
                                       aria-label="Copy suggestion"
@@ -1387,7 +1401,7 @@ export const PostCreator = ({
                                       ) : (
                                         <Copy size={16} />
                                       )}
-                                    </button>
+                                    </UI.IconButton>
                                   </>
                                 ) : generation.isGenerating ? (
                                   <div className="suggestion-skeleton">

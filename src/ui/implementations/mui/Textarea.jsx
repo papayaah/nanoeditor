@@ -1,5 +1,5 @@
 import { forwardRef } from 'react';
-import { Textarea as MantineTextarea } from '@mantine/core';
+import { TextField } from '@mui/material';
 
 export const Textarea = forwardRef(({ 
   label, 
@@ -12,18 +12,18 @@ export const Textarea = forwardRef(({
   ...props 
 }, ref) => {
   return (
-    <MantineTextarea
-      ref={ref}
+    <TextField
+      inputRef={ref}
       label={label}
       value={value}
-      onChange={(e) => onChange?.(e.target.value)}  // Convert to our format
+      onChange={(e) => onChange?.(e.target.value)}
       placeholder={placeholder}
+      multiline
       rows={rows}
       disabled={disabled}
       className={className}
-      size="sm"
-      autosize
-      minRows={rows}
+      fullWidth
+      size="small"
       {...props}
     />
   );

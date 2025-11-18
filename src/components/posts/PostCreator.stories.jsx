@@ -39,7 +39,13 @@ const Template = (args, context) => {
       {/* UI Theme Banner */}
       <div style={{
         padding: '12px 20px',
-        background: uiTheme === 'mantine' ? 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' : 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)',
+        background: {
+          mantine: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+          mui: 'linear-gradient(135deg, #1976d2 0%, #1565c0 100%)',
+          antd: 'linear-gradient(135deg, #1890ff 0%, #096dd9 100%)',
+          shadcn: 'linear-gradient(135deg, #18181b 0%, #27272a 100%)',
+          tailwind: 'linear-gradient(135deg, #06b6d4 0%, #0891b2 100%)'
+        }[uiTheme],
         color: 'white',
         display: 'flex',
         alignItems: 'center',
@@ -51,10 +57,22 @@ const Template = (args, context) => {
           <span style={{ fontSize: '20px' }}>🎨</span>
           <div>
             <div style={{ fontWeight: '600', fontSize: '14px' }}>
-              UI Theme: {uiTheme === 'mantine' ? 'Mantine UI' : 'Native HTML/CSS'}
+              UI Theme: {{
+                mantine: 'Mantine UI',
+                mui: 'Material-UI',
+                antd: 'Ant Design',
+                shadcn: 'shadcn/ui',
+                tailwind: 'Tailwind CSS'
+              }[uiTheme]}
             </div>
             <div style={{ fontSize: '12px', opacity: 0.9 }}>
-              {uiTheme === 'mantine' ? 'Modern, polished components' : 'Clean, minimal styling'}
+              {{
+                mantine: 'Modern, polished components',
+                mui: 'Google Material Design',
+                antd: 'Enterprise UI from Alibaba',
+                shadcn: 'Radix UI + Tailwind',
+                tailwind: 'Utility-first CSS'
+              }[uiTheme]}
             </div>
           </div>
         </div>
@@ -69,6 +87,7 @@ const Template = (args, context) => {
           onEntrySaved={handleEntrySaved}
           onNewEntry={handleNewEntry}
           onSettingsExport={setPostSettings}
+          uiTheme={uiTheme}
         />
       </div>
     </div>

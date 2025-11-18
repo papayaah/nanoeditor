@@ -1,6 +1,6 @@
 /**
- * shadcn/ui Implementation
- * Beautiful, accessible components built with Radix UI and Tailwind CSS
+ * Ant Design Implementation
+ * Enterprise-class UI design language from Alibaba
  */
 
 export { Button } from './Button';
