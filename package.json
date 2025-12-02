@@ -5,6 +5,14 @@
   "author": "David Ang",
   "license": "MIT",
   "type": "module",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/papayaah/nano-editor.git"
+  },
+  "bugs": {
+    "url": "https://github.com/papayaah/nano-editor/issues"
+  },
+  "homepage": "https://github.com/papayaah/nano-editor#readme",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
