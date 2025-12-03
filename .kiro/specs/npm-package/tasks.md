@@ -19,11 +19,13 @@
   - _Requirements: 12.1, 12.2, 12.3, 12.4, 12.5_
 
 - [ ] 3. Set up Storybook infrastructure
-  - Install and configure Storybook 7+ for React
-  - Configure Storybook with Vite builder
+  - Install Storybook 10.x: `npx storybook@latest init`
+  - Install specific packages: storybook@^10.1.0, @storybook/react@^10.1.0, @storybook/react-vite@^10.1.0
+  - Configure Storybook with Vite builder for React 19
   - Set up story organization structure (hooks/, components/, editors/, integrations/)
-  - Configure Storybook addons (controls, actions, docs, a11y)
+  - Configure Storybook addons (essentials, interactions, links, a11y)
   - Create story templates and documentation guidelines
+  - Ensure stories demonstrate headless hooks with different UI libraries
   - _Requirements: 18.1, 18.2, 18.3_
 
 ## Phase 2: Core Abstractions
@@ -35,11 +37,13 @@
   - Document adapter contract and method signatures
   - _Requirements: 7.1, 7.5, 12.4_
 
-- [ ] 4.2 Refactor existing Dexie implementation as default adapter
-  - Wrap existing db.js functions in adapter interface
-  - Replace idb with existing Dexie implementation (already installed)
-  - Ensure backward compatibility with existing data
+- [ ] 4.2 Migrate from Dexie to idb and create default adapter
+  - Install idb library (~1.5KB gzipped)
+  - Migrate existing Dexie db.js implementation to idb
+  - Wrap idb functions in storage adapter interface
+  - Ensure backward compatibility with existing data (same DB name and schema)
   - Add error handling for storage operations
+  - Keep demo app using Dexie for now (will use package later)
   - _Requirements: 7.3, 7.6_
 
 - [ ]* 4.3 Write property test for storage adapter interface
@@ -408,81 +412,31 @@
   - Add lazy loading for heavy components
   - _Requirements: 14.4_
 
-- [ ] 18. Testing infrastructure
-- [ ] 18.1 Set up Vitest
-  - Install and configure Vitest
-  - Set up React Testing Library
-  - Configure test coverage reporting
-  - _Requirements: Testing Strategy_
-
-- [ ] 18.2 Set up fast-check for property-based testing
-  - Install fast-check library
-  - Create property test utilities
-  - Configure to run 100+ iterations per property
-  - _Requirements: Testing Strategy_
-
-- [ ]* 18.3 Write unit tests for hooks and adapters
-  - Test usePostCreator state management
-  - Test useAI adapter integration
-  - Test AI adapter interface compliance
-  - Test Chrome, Gemini, OpenAI adapters
-  - _Requirements: Testing Strategy_
-
-- [ ]* 18.4 Write integration tests
-  - Test component factory with real UI libraries
-  - Test full post creation flow with different AI adapters
-  - Test storage adapter integration
-  - Test AI adapter switching
-  - Test error recovery flows
-  - _Requirements: Testing Strategy_
-
-- [ ] 18.5 Set up Playwright for E2E testing
-  - Install and configure Playwright
-  - Set up test organization structure (e2e/ folder)
-  - Configure browsers (Chrome, Firefox, Safari)
-  - Add test scripts to package.json
-  - _Requirements: Testing Strategy_
-
-- [ ]* 18.6 Write E2E tests with Playwright
-  - Write PostCreator workflow tests
-  - Write Basic editor tests with AI integration
-  - Write Lexical editor integration tests
-  - Write BlockNote editor integration tests
-  - Write context menu interaction tests
-  - Write inline assistant widget tests
-  - Write AI and storage adapter tests
-  - Test cross-browser compatibility
-  - _Requirements: Testing Strategy_
-
-- [ ] 19. Storybook deployment setup
-- [ ] 19.1 Configure Storybook build
+- [ ] 18. Storybook deployment setup
+- [ ] 18.1 Configure Storybook build
   - Add build-storybook script
   - Configure static file handling
   - _Requirements: 18.6_
 
-- [ ] 19.2 Set up Chromatic or Vercel deployment
-  - Configure CI/CD for Storybook deployment
+- [ ] 18.2 Set up Vercel deployment for Storybook
+  - Configure deployment for Storybook static site
   - Set up automatic deploys on main branch
   - _Requirements: 18.6_
 
-- [ ] 20. Package publishing preparation
-- [ ] 20.1 Configure npm publishing
+- [ ] 19. Package publishing preparation
+- [ ] 19.1 Configure npm publishing
   - Set up .npmignore
   - Configure package.json files field
   - Add prepublishOnly script
   - _Requirements: 1.1, 1.2, 1.3, 1.4_
 
-- [ ] 20.2 Create GitHub Actions workflow
-  - Add CI workflow for tests
+- [ ] 19.2 Create GitHub Actions workflow
   - Add CD workflow for npm publishing
   - Add workflow for Storybook deployment
   - _Requirements: Deployment_
 
-- [ ] 20.3 Deploy demo application
+- [ ] 19.3 Deploy demo application
   - Configure Vercel deployment for demo
   - Set up automatic deploys
   - Add environment variable setup for API keys
   - _Requirements: 19.4_
-
-- [ ] 21. Final checkpoint - Ensure all tests pass
-  - Ensure all tests pass, ask the user if questions arise.

@@ -2,7 +2,15 @@
 
 ## Introduction
 
-This specification defines the creation of a reusable npm package extracted from the Nano Editor codebase. The package will provide AI-assisted writing capabilities that developers can integrate into their existing applications. The current Nano Editor application will be moved to a `demo/` folder to serve as an integration example, while the core package functionality will be developed in `src/` using a Storybook-first approach. The package will provide AI-assisted writing capabilities through Chrome's built-in AI APIs, offering both lightweight headless components and full-featured rich text editing options. The package must be framework-agnostic with a headless UI architecture, allowing developers to use any UI library (Tailwind, Mantine, Material-UI, etc.) while maintaining the core AI functionality.
+This specification defines the creation of a reusable npm package extracted from the Nano Editor codebase. The package will provide AI-assisted writing capabilities that developers can integrate into their existing applications. The current Nano Editor application will be moved to a `demo/` folder to serve as an integration example, while the core package functionality will be developed in `src/` using a Storybook-first approach.
+
+The package follows a **headless UI architecture**, providing business logic through React hooks while allowing developers to bring their own UI components. This enables integration with any UI library (Tailwind, Mantine, Material-UI, Shadcn, etc.) without style conflicts or framework lock-in.
+
+**Technology Requirements:**
+- React 19.x (peer dependency)
+- Storybook 10.x for component documentation
+- TypeScript with full type definitions
+- Vite 7.x for build tooling
 
 ## Glossary
 
@@ -270,13 +278,12 @@ This specification defines the creation of a reusable npm package extracted from
 
 #### Acceptance Criteria
 
-1. WHEN developing new components THEN the System SHALL require Storybook stories to be created before component integration
-2. WHEN a developer runs Storybook THEN the Package SHALL display stories for all public components and hooks
+1. WHEN developing new components THEN the System SHALL use Storybook 10.x with React 19 support for component development
+2. WHEN a developer runs Storybook THEN the Package SHALL display stories for all public components and headless hooks
 3. WHEN a developer views a component story THEN Storybook SHALL show examples with different UI libraries (Tailwind, Mantine, Material-UI, Shadcn)
-4. WHEN a developer interacts with Storybook controls THEN the System SHALL allow real-time configuration of component props and hook parameters
-5. WHEN a developer views hook stories THEN Storybook SHALL demonstrate hook usage patterns with live examples and mock data
+4. WHEN a developer views hook stories THEN Storybook SHALL demonstrate headless hook usage patterns with live examples showing UI-agnostic business logic
+5. WHEN a developer interacts with Storybook controls THEN the System SHALL allow real-time configuration of component props and hook parameters
 6. WHEN the Package is published THEN the Package SHALL include a deployed Storybook site as the primary documentation
-7. WHEN components are tested THEN the System SHALL use Storybook stories as the basis for visual regression and interaction testing
 
 ### Requirement 19: Demo Application Structure
 

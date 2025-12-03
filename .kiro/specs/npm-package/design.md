@@ -2,12 +2,63 @@
 
 ## Overview
 
-The nano-editor-ai npm package provides AI-powered writing assistance through Chrome's built-in AI APIs. The package follows a headless architecture, separating business logic from UI presentation, allowing developers to integrate AI writing capabilities into any React application with their preferred UI library.
+The nano-editor-ai npm package provides AI-powered writing assistance through Chrome's built-in AI APIs. The package follows a **headless UI architecture**, completely separating business logic from UI presentation, allowing developers to integrate AI writing capabilities into any React application with their preferred UI library.
 
-The package is designed with three core principles:
+### Headless Architecture
+
+The package is built on a **headless-first** approach:
+
+- **Headless Hooks** - All business logic is exposed through framework-agnostic React hooks (`usePostCreator`, `useAI`, `useWriter`, `useRewriter`)
+- **UI-Agnostic** - No UI components are required; developers bring their own (Tailwind, Mantine, Material-UI, Shadcn, etc.)
+- **Component Factories** - Optional factory functions (`createPostCreator`) that accept UI components and wire them to headless hooks
+- **Adapter Pattern** - Pluggable AI providers (Chrome, Gemini, OpenAI) and storage backends (IndexedDB, custom)
+
+This architecture allows developers to:
+1. Use headless hooks directly for complete UI control
+2. Use component factories with their existing UI library
+3. Swap AI providers without changing UI code
+4. Integrate into existing applications without style conflicts
+
+### Core Principles
+
 1. **Modularity** - Developers import only what they need via subpath imports
 2. **Flexibility** - Headless hooks and component factories work with any UI library
 3. **Performance** - Minimal bundle size through tree-shaking and lightweight dependencies
+
+### Technology Stack
+
+- **React**: 19.x (peer dependency)
+- **Storybook**: 10.x for component documentation
+- **Build Tool**: Vite 7.x in library mode
+- **TypeScript**: Latest with full type definitions
+- **Storage**: idb (~1.5KB) for IndexedDB operations
+
+**Package Versions:**
+```json
+{
+  "peerDependencies": {
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0"
+  },
+  "dependencies": {
+    "idb": "^8.0.0",
+    "react-markdown": "^9.0.0"
+  },
+  "devDependencies": {
+    "storybook": "^10.1.0",
+    "@storybook/react": "^10.1.0",
+    "@storybook/react-vite": "^10.1.0",
+    "@storybook/addon-essentials": "^10.1.0",
+    "@storybook/addon-interactions": "^10.1.0",
+    "@storybook/addon-links": "^10.1.0",
+    "@storybook/addon-a11y": "^10.1.0",
+    "vite": "^7.0.0",
+    "typescript": "^5.6.0"
+  }
+}
+```
+
+**Note:** The current demo application uses Dexie (~15KB) for storage, but the npm package will migrate to idb (~1.5KB) for optimal bundle size. The demo will later consume the published package.
 
 ## Architecture
 
@@ -590,15 +641,17 @@ interface Generation {
 
 **Default Implementation (idb):**
 
+The package uses **idb** (~1.5KB gzipped) for minimal bundle size. The current demo app uses Dexie, but the npm package will migrate to idb for better bundle optimization.
+
 ```javascript
 import { openDB } from 'idb';
 
 const DB_NAME = 'NanoEditorDB';
-const DB_VERSION = 1;
+const DB_VERSION = 5;
 
 const initDB = async () => {
   return openDB(DB_NAME, DB_VERSION, {
-    upgrade(db) {
+    upgrade(db, oldVersion, newVersion, transaction) {
       // Documents store
       if (!db.objectStoreNames.contains('documents')) {
         const docStore = db.createObjectStore('documents', {
@@ -626,14 +679,15 @@ export const createIDBAdapter = () => {
     if (!db) db = await initDB();
     return db;
   };
-  
+
   return {
+    // Document operations
     createDocument: async () => {
       const database = await getDB();
       const now = new Date();
       const doc = {
         title: 'Untitled Document',
-        content: [],
+        content: JSON.stringify([]),
         createdAt: now,
         updatedAt: now,
       };
@@ -645,9 +699,71 @@ export const createIDBAdapter = () => {
       const database = await getDB();
       const doc = await database.get('documents', id);
       if (doc) {
-        doc.content = content;
+        doc.content = JSON.stringify(content);
         if (title) doc.title = title;
         doc.updatedAt = new Date();
+        await database.put('documents', doc);
+      }
+    },
+    
+    loadDocument: async (id) => {
+      const database = await getDB();
+      const doc = await database.get('documents', id);
+      return doc ? JSON.parse(doc.content) : null;
+    },
+    
+    getAllDocuments: async () => {
+      const database = await getDB();
+      const tx = database.transaction('documents', 'readonly');
+      const index = tx.store.index('updatedAt');
+      const docs = await index.getAll();
+      return docs.reverse(); // Most recent first
+    },
+    
+    deleteDocument: async (id) => {
+      const database = await getDB();
+      await database.delete('documents', id);
+    },
+    
+    // Post entry operations
+    createPostEntry: async () => {
+      const database = await getDB();
+      const now = new Date();
+      const id = Date.now().toString();
+      const entry = {
+        id,
+        text: '',
+        submissions: [],
+        settings: {},
+        isGenerating: false,
+        createdAt: now,
+        updatedAt: now,
+      };
+      await database.add('postEntries', entry);
+      return entry;
+    },
+    
+    savePostEntry: async (entry) => {
+      const database = await getDB();
+      await database.put('postEntries', entry);
+    },
+    
+    getPostEntry: async (id) => {
+      const database = await getDB();
+      return await database.get('postEntries', id);
+    },
+    
+    getAllPostEntries: async () => {
+      const database = await getDB();
+      const tx = database.transaction('postEntries', 'readonly');
+      const index = tx.store.index('updatedAt');
+      const entries = await index.getAll();
+      return entries.reverse(); // Most recent first
+    },
+    
+    deletePostEntry: async (id) => {
+      const database = await getDB();
+      await database.delete('postEntries', id);
         await database.put('documents', doc);
       }
     },
@@ -804,6 +920,16 @@ interface InlineAssistantProps {
 - Minimizes to button when not in use
 
 ## Data Models
+
+### Database Structure
+
+**Database Name:** `NanoEditorDB` (default, configurable via storage adapter)
+
+**Tables:**
+- **`documents`** - Stores document editor content (Basic, Lexical, BlockNote editors)
+- **`postEntries`** - Stores social media post generation history and settings
+
+Both documents and social posts are stored in the **same IndexedDB database** but in **separate tables** to maintain clear separation of concerns.
 
 ### PostEntry Schema
 
