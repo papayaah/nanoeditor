@@ -24,14 +24,16 @@
  * });
  */
 
-import { forwardRef } from 'react';
+import { forwardRef, useState } from 'react';
 import { Sparkles, Copy, Check, RefreshCw } from 'lucide-react';
 import { usePostCreator } from '../../hooks/usePostCreator';
+import { AIAssistantToggle } from './AIAssistantToggle';
+import { AIOptionsPanel } from './AIOptionsPanel';
 import ReactMarkdown from 'react-markdown';
 import './PostCreator.css';
 
 // Default components (vanilla HTML)
-const DefaultInput = forwardRef(({ value, onChange, ...props }, ref) => (
+const DefaultInput = forwardRef(({ value, onChange, multiline, minRows, ...props }, ref) => (
   <textarea
     ref={ref}
     value={value}
@@ -168,12 +170,18 @@ export const createPostCreator = (components = {}) => {
     onEntrySaved,
     onSettingsExport,
     darkMode,
+    // UI Library props
+    uiLibrary,
+    setUILibrary,
+    availableLibraries,
   }) {
     const logic = usePostCreator({
       currentEntryId,
       onEntrySaved,
       onSettingsExport,
     });
+
+    const [showAIPanel, setShowAIPanel] = useState(false);
 
     if (!logic.aiAvailable) {
       return (
@@ -196,6 +204,13 @@ export const createPostCreator = (components = {}) => {
               {/* Input Section */}
               <div className="current-input-row">
                 <div className="current-input">
+                  <div className="input-header">
+                    <AIAssistantToggle 
+                      isActive={showAIPanel}
+                      onToggle={() => setShowAIPanel(!showAIPanel)}
+                      disabled={logic.isGenerating}
+                    />
+                  </div>
                   <UI.Input
                     {...normalizeInputProps({
                       ref: logic.textareaRef,
@@ -223,6 +238,17 @@ export const createPostCreator = (components = {}) => {
                       Generate
                     </UI.Button>
                   </div>
+                  
+                  {/* AI Options Panel */}
+                  {showAIPanel && (
+                    <AIOptionsPanel
+                      {...logic.settings}
+                      isGenerating={logic.isGenerating}
+                      uiLibrary={uiLibrary}
+                      setUILibrary={setUILibrary}
+                      availableLibraries={availableLibraries}
+                    />
+                  )}
                 </div>
                 
                 {/* Empty state */}

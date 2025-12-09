@@ -1,6 +1,5 @@
 import { Plus, Trash2, Check, X, FileText, Megaphone, Clock, CalendarPlus } from 'lucide-react';
 import { DocumentInfo } from './documents/DocumentInfo';
-import { PostSettings } from './posts/PostSettings';
 
 export const Sidebar = ({ 
   documents, 
@@ -8,7 +7,6 @@ export const Sidebar = ({
   showSidebar, 
   deleteConfirmId,
   docInfoCollapsed,
-  postSettingsCollapsed,
   onSelectDocument, 
   onNewDocument,
   onNewPost,
@@ -16,14 +14,8 @@ export const Sidebar = ({
   onConfirmDelete,
   onCancelDelete,
   onToggleDocInfo,
-  onTogglePostSettings,
   onNavigate,
   currentRoute,
-  postSettings,
-  // UI Library props
-  uiLibrary,
-  setUILibrary,
-  availableLibraries,
   // Post entries props
   postEntries,
   currentEntryId,
@@ -220,18 +212,7 @@ export const Sidebar = ({
         </div>
       )}
       
-      {isPostsMode ? (
-        postSettings && (
-          <PostSettings 
-            {...postSettings}
-            collapsed={postSettingsCollapsed}
-            onToggle={onTogglePostSettings}
-            uiLibrary={uiLibrary}
-            setUILibrary={setUILibrary}
-            availableLibraries={availableLibraries}
-          />
-        )
-      ) : (
+      {!isPostsMode && (
         <DocumentInfo 
           currentDocId={currentDocId}
           documents={documents}

@@ -228,6 +228,16 @@
   align-items: start;
 }
 
+.current-input {
+  position: relative;
+}
+
+.input-header {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 8px;
+}
+
 .current-input textarea {
   width: 100%;
   padding: 16px;

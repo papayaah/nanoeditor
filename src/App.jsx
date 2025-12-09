@@ -215,6 +215,9 @@ function App() {
               onNewEntry={handleNewEntry}
               darkMode={darkMode}
               onSettingsExport={setPostSettings}
+              uiLibrary={uiLibrary}
+              setUILibrary={setUILibrary}
+              availableLibraries={availableLibraries}
             />
           )
         ) : (

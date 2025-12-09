@@ -6,11 +6,18 @@ import { getAllPostEntries, savePostEntry, repairCorruptedEntries } from './useP
 /**
  * Headless hook for PostCreator business logic
  * UI-agnostic - can be used with any UI library
+ * 
+ * @param {Object} options
+ * @param {string} options.currentEntryId - Current post entry ID
+ * @param {Function} options.onEntrySaved - Callback when entry is saved
+ * @param {Function} [options.onSettingsExport] - Callback to export settings
+ * @param {AIAdapter} [options.aiAdapter] - Custom AI adapter (for BYOK). If not provided, uses Chrome AI
  */
 export const usePostCreator = ({ 
   currentEntryId,
   onEntrySaved,
-  onSettingsExport
+  onSettingsExport,
+  aiAdapter = null, // Bring Your Own Key support
 }) => {
   const [inputText, setInputText] = useState('');
   const [currentEntry, setCurrentEntry] = useState(null);
@@ -313,8 +320,594 @@ export const usePostCreator = ({
 
   // Generate suggestions function (extracted from original component)
   const generateSuggestions = async (text, targetEntryId = null, forceNewSubmission = false) => {
-    // ... (implementation continues in next message due to length)
-    // This would contain the full generateSuggestions logic from the original component
+    if (!aiAvailable) return;
+
+    // Use provided entryId or currentEntryId
+    const entryId = targetEntryId || currentEntryId;
+    if (!entryId) return;
+    
+    // Create generation ID at the start so it's accessible in callbacks
+    const newGenerationId = Date.now();
+
+    try {
+      // Load the entry we're generating for (could be current or new)
+      const loadedEntries = await getAllPostEntries();
+      let entryToUpdate = loadedEntries.find(e => e.id === entryId);
+      
+      // If entry doesn't exist, create a new one
+      if (!entryToUpdate) {
+        entryToUpdate = {
+          id: entryId,
+          text: '',
+          suggestions: [],
+          settings: {},
+          isGenerating: false,
+          createdAt: new Date(),
+          updatedAt: new Date()
+        };
+      }
+      
+      // Store multiple submissions - each submission has text, settings, and generations
+      // Structure: submissions = [{ id, text, settings, generations: [{ suggestions, isGenerating, timestamp }], timestamp }, ...]
+      const existingSubmissions = Array.isArray(entryToUpdate.submissions) ? entryToUpdate.submissions : [];
+      
+      // If we have old-style data, convert to new format
+      if (!existingSubmissions.length && entryToUpdate.text && Array.isArray(entryToUpdate.suggestions) && entryToUpdate.suggestions.some(s => s && s.trim())) {
+        existingSubmissions.push({
+          id: Date.now() - 1000,
+          text: entryToUpdate.text,
+          settings: entryToUpdate.settings || {},
+          generations: [{
+            id: Date.now() - 500,
+            suggestions: entryToUpdate.suggestions,
+            isGenerating: false,
+            timestamp: entryToUpdate.updatedAt || new Date()
+          }],
+          timestamp: entryToUpdate.updatedAt || new Date()
+        });
+      }
+      
+      // Get current settings
+      const currentSettings = {
+        apiMode,
+        tone,
+        writerTone,
+        format,
+        length,
+        style,
+        customStyle,
+        useEmoticons,
+        stream,
+      };
+      
+      // Determine if we should create a new submission
+      // Rule 1: Cmd+Enter/Shift+Enter always creates new submission (forceNewSubmission = true)
+      // Rule 3: Regenerate with same settings adds generation to existing submission (forceNewSubmission = false)
+      // Rule 4: Regenerate with new settings creates new submission (forceNewSubmission = true)
+      const lastSubmission = existingSubmissions[0];
+      let shouldCreateNewSubmission = forceNewSubmission;
+      
+      // Normalize settings for comparison (exclude writerTone since it's derived from tone)
+      const normalizeSettings = (settings) => {
+        const normalized = { ...settings };
+        delete normalized.writerTone;
+        return normalized;
+      };
+      
+      // If not forced, check if settings changed from last submission
+      if (!shouldCreateNewSubmission && lastSubmission) {
+        shouldCreateNewSubmission = 
+          JSON.stringify(normalizeSettings(lastSubmission.settings)) !== 
+          JSON.stringify(normalizeSettings(currentSettings));
+      }
+      
+      if (shouldCreateNewSubmission) {
+        // Create a new submission (Rule 1: Cmd+Enter/Shift+Enter, Rule 4: Regenerate with new settings)
+        const newSubmission = {
+          id: Date.now(),
+          text: text,
+          settings: currentSettings,
+          generations: [{
+            id: newGenerationId,
+            suggestions: ['', '', ''],
+            isGenerating: true,
+            timestamp: new Date()
+          }],
+          timestamp: new Date()
+        };
+        
+        const updatedSubmissions = [newSubmission, ...existingSubmissions];
+        
+        const updatedEntry = {
+          ...entryToUpdate,
+          id: entryId,
+          text: text, // Keep for backward compatibility
+          submissions: updatedSubmissions,
+          // Keep old format for backward compatibility
+          suggestions: newSubmission.generations[0].suggestions,
+          isGenerating: true,
+          settings: currentSettings,
+        };
+        
+        await savePostEntry(updatedEntry);
+        
+        // Reload from database to ensure we have the latest data
+        const reloadedEntries = await getAllPostEntries();
+        const reloadedEntry = reloadedEntries.find(e => e.id === entryId);
+        
+        if (entryId === currentEntryId && reloadedEntry) {
+          setCurrentEntry(reloadedEntry);
+        }
+        
+        // Notify parent to refresh entries list
+        if (onEntrySaved) {
+          onEntrySaved();
+        }
+      } else {
+        // Add a new generation to the existing submission (Rule 3: Regenerate with same settings)
+        const updatedSubmissions = existingSubmissions.map((submission, index) => {
+          if (index === 0) {
+            // Add new generation to the first (most recent) submission
+            return {
+              ...submission,
+              generations: [{
+                id: newGenerationId,
+                suggestions: ['', '', ''],
+                isGenerating: true,
+                timestamp: new Date()
+              }, ...submission.generations]
+            };
+          }
+          return submission;
+        });
+        
+        const updatedEntry = {
+          ...entryToUpdate,
+          id: entryId,
+          submissions: updatedSubmissions,
+          // Keep old format for backward compatibility
+          suggestions: updatedSubmissions[0].generations[0].suggestions,
+          isGenerating: true,
+          settings: currentSettings,
+        };
+        
+        await savePostEntry(updatedEntry);
+        
+        // Reload from database to ensure we have the latest data
+        const reloadedEntries = await getAllPostEntries();
+        const reloadedEntry = reloadedEntries.find(e => e.id === entryId);
+        
+        if (entryId === currentEntryId && reloadedEntry) {
+          setCurrentEntry(reloadedEntry);
+        }
+        
+        // Notify parent to refresh entries list
+        if (onEntrySaved) {
+          onEntrySaved();
+        }
+      }
+
+      if (apiMode === 'writer') {
+        // Use Writer API - generates more varied content
+        const emoticonInstruction = useEmoticons
+          ? 'Emoticons are allowed.'
+          : 'No emoticons or emojis.';
+        
+        // Build style instruction
+        const styleInstructions = {
+          default: '',
+          humorous: 'Write in a humorous and funny way that makes people laugh.',
+          witty: 'Write in a witty and clever way with smart wordplay.',
+          sarcastic: 'Rewrite in a sarcastic and ironic tone.',
+          inspirational: 'Write in an inspirational way that uplifts and motivates.',
+          motivational: 'Write in a motivational way that encourages action.',
+          dramatic: 'Write in a dramatic and intense way.',
+          mysterious: 'Write in a mysterious and intriguing way.',
+          scary: 'Write in a scary and suspenseful way.',
+          angry: 'Write in an angry and passionate way.',
+          excited: 'Write in an excited and enthusiastic way.',
+          calm: 'Write in a calm and peaceful way.',
+          professional: 'Write in a professional and polished way.',
+          friendly: 'Write in a friendly and approachable way.',
+          persuasive: 'Write in a persuasive way that convinces readers.',
+          storytelling: 'Write in a storytelling narrative style.',
+          educational: 'Write in an educational and informative way.',
+          controversial: 'Write in a controversial way that sparks debate.',
+          clickbait: 'Write in a clickbait style that creates curiosity.',
+        };
+        
+        const styleInstruction = style === 'custom' && customStyle.trim()
+          ? customStyle.trim()
+          : (styleInstructions[style] || '');
+        
+        const sharedContext = `${emoticonInstruction} You will rewrite what the user provides for social media. ${styleInstruction}`;
+        
+        // Wrap the user's text to make it clear it's content to rewrite, not a question to answer
+        const prompts = [
+          `Rewrite this text: "${text}"`,
+          `Rephrase this: "${text}"`,
+          `Make this more engaging: "${text}"`
+        ];
+
+        // Ensure Writer hook state is synced before generating
+        if (format !== writerFormat) {
+          setWriterFormat(format);
+        }
+        if (length !== writerLength) {
+          setWriterLength(length);
+        }
+        // Wait a tick for state to sync
+        await new Promise(resolve => setTimeout(resolve, 50));
+
+        // Start all 3 generations in parallel
+        // Note: Chrome AI API queues these internally, so they complete sequentially
+        const results = await Promise.all(
+          prompts.map(async (prompt, index) => {
+            try {
+              return await generateText(prompt, sharedContext, !useEmoticons, stream ? (streamedText) => {
+              // Update the current generation during streaming (in submissions structure)
+              if (entryId === currentEntryId) {
+                setCurrentEntry(prev => {
+                  if (prev && prev.id === entryId) {
+                    const submissions = Array.isArray(prev.submissions) ? prev.submissions : [];
+                    const updatedSubmissions = submissions.map((submission, subIndex) => {
+                      if (subIndex === 0) {
+                        // Update the first (most recent) submission
+                        const generations = Array.isArray(submission.generations) ? submission.generations : [];
+                        const updatedGenerations = generations.map(gen => {
+                          if (gen.id === newGenerationId) {
+                            const currentSuggestions = Array.isArray(gen.suggestions) ? gen.suggestions : ['', '', ''];
+                            return {
+                              ...gen,
+                              suggestions: currentSuggestions.map((s, i) => 
+                                i === index ? streamedText.trim() : s
+                              ),
+                            };
+                          }
+                          return gen;
+                        });
+                        return {
+                          ...submission,
+                          generations: updatedGenerations
+                        };
+                      }
+                      return submission;
+                    });
+                    return {
+                      ...prev,
+                      submissions: updatedSubmissions,
+                      suggestions: updatedSubmissions[0]?.generations[0]?.suggestions || ['', '', '']
+                    };
+                  }
+                  return prev;
+                });
+              }
+              
+              // Also save to database
+              getAllPostEntries().then(entries => {
+                const entry = entries.find(e => e.id === entryId);
+                if (entry) {
+                  const submissions = Array.isArray(entry.submissions) ? entry.submissions : [];
+                  const updatedSubmissions = submissions.map((submission, subIndex) => {
+                    if (subIndex === 0) {
+                      const generations = Array.isArray(submission.generations) ? submission.generations : [];
+                      const updatedGenerations = generations.map(gen => {
+                        if (gen.id === newGenerationId) {
+                          const currentSuggestions = Array.isArray(gen.suggestions) ? gen.suggestions : ['', '', ''];
+                          return {
+                            ...gen,
+                            suggestions: currentSuggestions.map((s, i) => 
+                              i === index ? streamedText.trim() : s
+                            ),
+                          };
+                        }
+                        return gen;
+                      });
+                      return {
+                        ...submission,
+                        generations: updatedGenerations
+                      };
+                    }
+                    return submission;
+                  });
+                  const updatedEntry = {
+                    ...entry,
+                    submissions: updatedSubmissions,
+                    suggestions: updatedSubmissions[0]?.generations[0]?.suggestions || ['', '', '']
+                  };
+                  savePostEntry(updatedEntry);
+                }
+              });
+            } : null);
+            } catch (error) {
+              console.error(`Error generating suggestion ${index + 1}:`, error);
+              return '';
+            }
+          })
+        );
+
+        // Update entry with results - update the current generation in submissions structure
+        const updateEntryWithResults = async () => {
+          const allEntries = await getAllPostEntries();
+          const entry = allEntries.find(e => e.id === entryId);
+          if (entry) {
+            const newSuggestions = results.map(r => (r || '').trim());
+            const submissions = Array.isArray(entry.submissions) ? entry.submissions : [];
+            const updatedSubmissions = submissions.map((submission, subIndex) => {
+              if (subIndex === 0) {
+                // Update the first (most recent) submission
+                const generations = Array.isArray(submission.generations) ? submission.generations : [];
+                const updatedGenerations = generations.map(gen => {
+                  if (gen.id === newGenerationId) {
+                    return {
+                      ...gen,
+                      suggestions: newSuggestions,
+                      isGenerating: false
+                    };
+                  }
+                  return gen;
+                });
+                return {
+                  ...submission,
+                  generations: updatedGenerations
+                };
+              }
+              return submission;
+            });
+            
+            const updatedEntry = {
+              ...entry,
+              text: text, // Keep for backward compatibility
+              submissions: updatedSubmissions,
+              suggestions: updatedSubmissions[0]?.generations[0]?.suggestions || newSuggestions,
+              isGenerating: false
+            };
+            await savePostEntry(updatedEntry);
+            
+            // Only update currentEntry if this is the current entry
+            if (entryId === currentEntryId) {
+              setCurrentEntry(updatedEntry);
+            }
+            
+            // Reload entries list
+            if (onEntrySaved) {
+              onEntrySaved();
+            }
+          }
+        };
+
+        // If streaming is off, update with final results
+        if (!stream) {
+          await updateEntryWithResults();
+        } else {
+          // For streaming, ensure we update with final results after streaming completes
+          await updateEntryWithResults();
+        }
+      } else {
+        // Use Rewriter API
+        const emoticonInstruction = useEmoticons
+          ? 'You should include relevant emojis to make it engaging.'
+          : 'You must NOT include any emojis, emoticons, or unicode symbols. Use only plain text.';
+        
+        // Build style instruction for Rewriter
+        const styleInstructions = {
+          default: '',
+          humorous: 'Make it humorous and funny.',
+          witty: 'Make it witty and clever.',
+          sarcastic: 'Make it sarcastic and ironic.',
+          inspirational: 'Make it inspirational and uplifting.',
+          motivational: 'Make it motivational and encouraging.',
+          dramatic: 'Make it dramatic and intense.',
+          mysterious: 'Make it mysterious and intriguing.',
+          scary: 'Make it scary and suspenseful.',
+          angry: 'Make it angry and passionate.',
+          excited: 'Make it excited and enthusiastic.',
+          calm: 'Make it calm and peaceful.',
+          professional: 'Make it professional and polished.',
+          friendly: 'Make it friendly and approachable.',
+          persuasive: 'Make it persuasive and convincing.',
+          storytelling: 'Make it narrative and story-like.',
+          educational: 'Make it educational and informative.',
+          controversial: 'Make it controversial and debate-sparking.',
+          clickbait: 'Make it clickbait-style and curiosity-inducing.',
+        };
+        
+        const styleInstruction = style === 'custom' && customStyle.trim()
+          ? customStyle.trim()
+          : (styleInstructions[style] || '');
+        
+        const sharedContext = `This is for a social media post. You will rewrite what the user provides for social media. ${styleInstruction} ${emoticonInstruction}`;
+
+        // Note: Chrome AI API queues these internally, so they complete sequentially
+        const results = await Promise.all(
+          [0, 1, 2].map((index) => {
+            return rewriteText(text, tone, format, length, sharedContext, !useEmoticons, stream ? (streamedText) => {
+              // Update the current generation during streaming (in submissions structure)
+              if (entryId === currentEntryId) {
+                setCurrentEntry(prev => {
+                  if (prev && prev.id === entryId) {
+                    const submissions = Array.isArray(prev.submissions) ? prev.submissions : [];
+                    const updatedSubmissions = submissions.map((submission, subIndex) => {
+                      if (subIndex === 0) {
+                        // Update the first (most recent) submission
+                        const generations = Array.isArray(submission.generations) ? submission.generations : [];
+                        const updatedGenerations = generations.map(gen => {
+                          if (gen.id === newGenerationId) {
+                            const currentSuggestions = Array.isArray(gen.suggestions) ? gen.suggestions : ['', '', ''];
+                            return {
+                              ...gen,
+                              suggestions: currentSuggestions.map((s, i) => 
+                                i === index ? streamedText.trim() : s
+                              ),
+                            };
+                          }
+                          return gen;
+                        });
+                        return {
+                          ...submission,
+                          generations: updatedGenerations
+                        };
+                      }
+                      return submission;
+                    });
+                    return {
+                      ...prev,
+                      submissions: updatedSubmissions,
+                      suggestions: updatedSubmissions[0]?.generations[0]?.suggestions || ['', '', '']
+                    };
+                  }
+                  return prev;
+                });
+              }
+              
+              // Also save to database
+              getAllPostEntries().then(entries => {
+                const entry = entries.find(e => e.id === entryId);
+                if (entry) {
+                  const submissions = Array.isArray(entry.submissions) ? entry.submissions : [];
+                  const updatedSubmissions = submissions.map((submission, subIndex) => {
+                    if (subIndex === 0) {
+                      const generations = Array.isArray(submission.generations) ? submission.generations : [];
+                      const updatedGenerations = generations.map(gen => {
+                        if (gen.id === newGenerationId) {
+                          const currentSuggestions = Array.isArray(gen.suggestions) ? gen.suggestions : ['', '', ''];
+                          return {
+                            ...gen,
+                            suggestions: currentSuggestions.map((s, i) => 
+                              i === index ? streamedText.trim() : s
+                            ),
+                          };
+                        }
+                        return gen;
+                      });
+                      return {
+                        ...submission,
+                        generations: updatedGenerations
+                      };
+                    }
+                    return submission;
+                  });
+                  const updatedEntry = {
+                    ...entry,
+                    submissions: updatedSubmissions,
+                    suggestions: updatedSubmissions[0]?.generations[0]?.suggestions || ['', '', '']
+                  };
+                  savePostEntry(updatedEntry);
+                }
+              });
+            } : null);
+          })
+        );
+
+        // Update entry with results - update the current generation in submissions structure
+        const updateEntryWithResults = async () => {
+          const allEntries = await getAllPostEntries();
+          const entry = allEntries.find(e => e.id === entryId);
+          if (entry) {
+            const newSuggestions = results.map(r => (r || '').trim());
+            const submissions = Array.isArray(entry.submissions) ? entry.submissions : [];
+            const updatedSubmissions = submissions.map((submission, subIndex) => {
+              if (subIndex === 0) {
+                // Update the first (most recent) submission
+                const generations = Array.isArray(submission.generations) ? submission.generations : [];
+                const updatedGenerations = generations.map(gen => {
+                  if (gen.id === newGenerationId) {
+                    return {
+                      ...gen,
+                      suggestions: newSuggestions,
+                      isGenerating: false
+                    };
+                  }
+                  return gen;
+                });
+                return {
+                  ...submission,
+                  generations: updatedGenerations
+                };
+              }
+              return submission;
+            });
+            
+            const updatedEntry = {
+              ...entry,
+              text: text, // Keep for backward compatibility
+              submissions: updatedSubmissions,
+              suggestions: updatedSubmissions[0]?.generations[0]?.suggestions || newSuggestions,
+              isGenerating: false
+            };
+            await savePostEntry(updatedEntry);
+            
+            // Only update currentEntry if this is the current entry
+            if (entryId === currentEntryId) {
+              setCurrentEntry(updatedEntry);
+            }
+            
+            // Reload entries list
+            if (onEntrySaved) {
+              onEntrySaved();
+            }
+          }
+        };
+
+        // If streaming is off, update with final results
+        if (!stream) {
+          await updateEntryWithResults();
+        } else {
+          // For streaming, ensure we update with final results after streaming completes
+          await updateEntryWithResults();
+        }
+      }
+
+      // Mark generation as complete in submissions structure
+      const finalEntries = await getAllPostEntries();
+      const entry = finalEntries.find(e => e.id === entryId);
+      if (entry) {
+        const submissions = Array.isArray(entry.submissions) ? entry.submissions : [];
+        const updatedSubmissions = submissions.map((submission, subIndex) => {
+          if (subIndex === 0) {
+            // Update the first (most recent) submission
+            const generations = Array.isArray(submission.generations) ? submission.generations : [];
+            const updatedGenerations = generations.map(gen => {
+              if (gen.id === newGenerationId) {
+                return { ...gen, isGenerating: false };
+              }
+              return gen;
+            });
+            return {
+              ...submission,
+              generations: updatedGenerations
+            };
+          }
+          return submission;
+        });
+        
+        const updatedEntry = {
+          ...entry,
+          submissions: updatedSubmissions,
+          isGenerating: updatedSubmissions[0]?.generations.some(gen => gen.isGenerating) || false
+        };
+        await savePostEntry(updatedEntry);
+        
+        // Only update currentEntry if this is the current entry
+        if (entryId === currentEntryId) {
+          setCurrentEntry(updatedEntry);
+        }
+        
+        // Reload entries list
+        if (onEntrySaved) {
+          onEntrySaved();
+        }
+      }
+    } catch (error) {
+      console.error('Failed to generate suggestions:', error);
+      // Mark as not generating on error
+      setCurrentEntry(prev => {
+        if (prev && prev.id === entryId) {
+          return { ...prev, isGenerating: false };
+        }
+        return prev;
+      });
+    }
   };
 
   const handleCopy = (text, entryId, index) => {
@@ -324,7 +917,78 @@ export const usePostCreator = ({
   };
 
   const handleRegenerate = async () => {
-    // ... (regenerate logic from original)
+    if (isGenerating || !currentEntry) return;
+
+    // Rule 3: Regenerate with same settings - adds new generation to existing submission
+    // Rule 4: Regenerate with new settings - creates new submission within same post
+    let forceNewSubmission = false;
+    
+    // Load entries once for all operations
+    const allEntries = await getAllPostEntries();
+    const entry = allEntries.find(e => e.id === currentEntryId);
+    
+    if (!entry) {
+      generateSuggestions(currentEntry.text || inputText.trim(), currentEntryId, false);
+      return;
+    }
+    
+    const existingSubmissions = Array.isArray(entry.submissions) ? entry.submissions : [];
+    const lastSubmission = existingSubmissions[0];
+    
+    if (useCurrentSettings && lastSubmission) {
+      // If "Use current settings" is checked, compare current settings with last submission's settings
+      const currentSettings = {
+        apiMode,
+        tone,
+        writerTone,
+        format,
+        length,
+        style,
+        customStyle,
+        useEmoticons,
+        stream,
+      };
+      
+      // Normalize settings for comparison (exclude writerTone since it's derived from tone)
+      const normalizeSettings = (settings) => {
+        const normalized = { ...settings };
+        delete normalized.writerTone;
+        return normalized;
+      };
+      
+      // Check if any settings have changed from last submission
+      const settingsChanged = 
+        JSON.stringify(normalizeSettings(lastSubmission.settings)) !== 
+        JSON.stringify(normalizeSettings(currentSettings));
+      
+      if (settingsChanged) {
+        // Rule 4: Settings changed - create new submission within same post
+        forceNewSubmission = true;
+      }
+      // If settings haven't changed, just add a new generation (forceNewSubmission stays false)
+    } else if (!useCurrentSettings && lastSubmission && lastSubmission.settings) {
+      // If "Use current settings" is unchecked, restore original settings from last submission
+      const savedSettings = lastSubmission.settings;
+      setApiMode(savedSettings.apiMode);
+      setTone(savedSettings.tone);
+      if (savedSettings.format) setFormat(savedSettings.format);
+      setLength(savedSettings.length);
+      if (savedSettings.style) setStyle(savedSettings.style);
+      if (savedSettings.customStyle !== undefined) setCustomStyle(savedSettings.customStyle);
+      setUseEmoticons(savedSettings.useEmoticons);
+      setStream(savedSettings.stream);
+      
+      // Wait a tick for state to update
+      await new Promise(resolve => setTimeout(resolve, 0));
+    }
+
+    // Get text from last submission, or fall back to currentEntry.text or inputText
+    let textToRegenerate = currentEntry.text || inputText.trim();
+    if (lastSubmission && lastSubmission.text) {
+      textToRegenerate = lastSubmission.text;
+    }
+    
+    generateSuggestions(textToRegenerate, currentEntryId, forceNewSubmission);
   };
 
   const handleSubmit = () => {
