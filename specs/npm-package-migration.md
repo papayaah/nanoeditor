@@ -80,8 +80,8 @@ writer/
 │   │   ├── useWriter.stories.jsx
 │   │   ├── useRewriter.js
 │   │   ├── useRewriter.stories.jsx
-│   │   ├── useArticles.js
-│   │   ├── useArticles.stories.jsx
+│   │   ├── useDocuments.js
+│   │   ├── useDocuments.stories.jsx
 │   │   ├── useMarkdown.js
 │   │   ├── useMarkdownPaste.js
 │   │   ├── usePdfExport.js
@@ -142,7 +142,158 @@ const PostCreator = createPostCreator({
 ```
 
 **Article Editor:**
-The article editor uses BlockNote which has its own styling, but can be customized via presets for UI elements like buttons, modals, etc.
+The article editor follows a **headless architecture** similar to the post creator. Users can:
+1. Use the provided `BlockNoteEditor` component (optional, uses BlockNote)
+2. Build their own editor using the provided hooks and services
+3. Use a factory function `createArticleEditor` with custom editor components
+
+**Key Architecture:**
+- **Headless Hooks/Services**: `useDocuments`, `useWriter`, `useRewriter`, `useMarkdown`, `usePdfExport` - work with any editor
+- **BlockNoteEditor Component**: Optional pre-built editor using BlockNote (lazy-loaded)
+- **Factory Pattern**: `createArticleEditor` - allows custom editor components (similar to `createPostCreator`)
+
+**Note**: Currently only BlockNoteEditor is provided. Users can build lightweight alternatives using the hooks.
+
+**BlockNoteEditor Component (Optional):**
+```typescript
+interface BlockNoteEditorProps {
+  docId: string;              // Required: Document/article ID
+  onSave: (content: any) => void; // Required: Callback when content changes
+  onExportPdf?: (content: any) => void; // Optional: PDF export callback
+  darkMode?: boolean;          // Optional: Dark/light theme (default: false)
+}
+```
+
+**Usage Example:**
+```jsx
+import { BlockNoteEditor, useDocuments } from '@reactkits.dev/react-writer/articles';
+
+function MyApp() {
+  const { currentDocId, handleSave } = useDocuments();
+  
+  return (
+    <BlockNoteEditor
+      docId={currentDocId}
+      onSave={handleSave}
+      darkMode={false}
+      onExportPdf={(content) => {
+        // Handle PDF export
+      }}
+    />
+  );
+}
+```
+
+**BlockNoteEditor Features:**
+- Full BlockNote rich text editor
+- AI rewrite button in formatting toolbar
+- AI writing prompts (WriterPrompt component)
+- Streaming block indicator for AI generation
+- Markdown paste support
+- PDF export functionality
+- Auto-save on content changes
+
+**Headless Usage (Build Your Own Editor):**
+```jsx
+import { 
+  useDocuments, 
+  useWriter, 
+  useRewriter,
+  useMarkdown,
+  usePdfExport 
+} from '@reactkits.dev/react-writer/articles';
+
+function MyCustomEditor({ docId }) {
+  const { handleSave } = useDocuments();
+  const { writeText } = useWriter();
+  const { rewriteText } = useRewriter();
+  const { markdown, toggleMarkdown } = useMarkdown();
+  
+  // Use your own editor component (e.g., textarea, contentEditable, etc.)
+  return (
+    <textarea
+      value={content}
+      onChange={(e) => handleSave(e.target.value)}
+      // ... your custom editor
+    />
+  );
+}
+```
+
+**Factory Pattern (Custom Editor Component):**
+```jsx
+import { createArticleEditor } from '@reactkits.dev/react-writer/articles';
+import MyCustomEditor from './MyCustomEditor';
+
+// Create article editor with your custom editor component
+const ArticleEditor = createArticleEditor({
+  Editor: MyCustomEditor,
+  // ... other components
+});
+
+<ArticleEditor docId={docId} onSave={handleSave} />
+```
+
+### Post Creator Usage
+
+**Post Creator Component Props:**
+```typescript
+interface PostCreatorProps {
+  currentEntryId?: string;     // Optional: Current post entry ID
+  onEntrySaved?: (entry) => void; // Optional: Callback when entry is saved
+  onSettingsExport?: (settings) => void; // Optional: Settings export callback
+  onNewEntry?: () => void;      // Optional: New entry callback
+  darkMode?: boolean;           // Optional: Dark/light theme
+}
+```
+
+**Headless Hook Usage (usePostCreator):**
+```jsx
+import { usePostCreator } from '@reactkits.dev/react-writer/posts';
+
+function MyCustomForm() {
+  const {
+    inputText,
+    setInputText,
+    handleSubmit,
+    isGenerating,
+    // ... other hook values
+  } = usePostCreator({ currentEntryId, onEntrySaved });
+  
+  return (
+    <textarea
+      value={inputText}
+      onChange={(e) => setInputText(e.target.value)}
+    />
+  );
+}
+```
+
+**Full Component Usage:**
+```jsx
+import { createPostCreator, tailwindPreset } from '@reactkits.dev/react-writer/posts';
+
+const PostCreator = createPostCreator(tailwindPreset);
+
+<PostCreator 
+  currentEntryId={entryId}
+  onEntrySaved={handleSave}
+/>
+```
+
+**Features Included:**
+- Headless hook for custom UI integration
+- Full component with built-in textarea
+- AI generation with "Reuse" button to prefill input
+- Multiple AI suggestions with regenerate
+- Settings panel for AI configuration
+- Post history/entries management
+
+**Note on Title Field Support:**
+Currently, the post creator only supports a single text field. For platforms like Reddit that require both title and body, this would need to be added. The spec should consider:
+- Adding optional `title` field to post entries
+- Supporting title + body in the preset interface
+- Prefilling both title and body when using AI-generated content
 
 ### Required Preset Components
 
@@ -362,7 +513,7 @@ export default preview;
 - `src/hooks/useAI.stories.jsx` - AI adapter integration
 - `src/hooks/useWriter.stories.jsx` - Writer API hook
 - `src/hooks/useRewriter.stories.jsx` - Rewriter API hook
-- `src/hooks/useArticles.stories.jsx` - Article management hook
+- `src/hooks/useDocuments.stories.jsx` - Article/document management hook
 - `src/hooks/usePdfExport.stories.jsx` - PDF export hook
 
 **Component Stories:**
@@ -465,6 +616,12 @@ export const Default = () => {
   },
   "peerDependenciesMeta": {
     "@mantine/core": {
+      "optional": true
+    },
+    "@blocknote/react": {
+      "optional": true
+    },
+    "@blocknote/mantine": {
       "optional": true
     }
   },
@@ -573,15 +730,26 @@ export { tailwindPreset, mantinePreset } from '../presets';
 **`src/exports/articles.js`:**
 ```javascript
 // Article editor specific exports
+
+// Optional: BlockNoteEditor component (lazy-loaded, requires @blocknote/mantine)
 export { default as BlockNoteEditor } from '../components/articles/BlockNoteEditor';
+
+// Headless hooks and services (work with any editor)
+export { useDocuments } from '../hooks/useDocuments'; // Article CRUD operations
+export { useWriter } from '../hooks/useWriter'; // AI writing service
+export { useRewriter } from '../hooks/useRewriter'; // AI rewriting service
+export { useMarkdown } from '../hooks/useMarkdown'; // Markdown utilities
+export { useMarkdownPaste } from '../hooks/useMarkdownPaste'; // Markdown paste support
+export { usePdfExport } from '../hooks/usePdfExport'; // PDF export functionality
+
+// Optional UI components (for BlockNoteEditor)
 export { ArticleInfo } from '../components/articles/ArticleInfo';
 export { RewriteButton } from '../components/articles/RewriteButton';
 export { StreamingBlockIndicator } from '../components/articles/StreamingBlockIndicator';
 export { WriterPrompt } from '../components/articles/WriterPrompt';
-export { useArticles } from '../hooks/useArticles';
-export { useMarkdown } from '../hooks/useMarkdown';
-export { useMarkdownPaste } from '../hooks/useMarkdownPaste';
-export { usePdfExport } from '../hooks/usePdfExport';
+
+// Factory function for custom editor components (to be implemented)
+// export { createArticleEditor } from '../components/articles/createArticleEditor';
 ```
 
 **`src/exports/hooks.js`:**
@@ -592,7 +760,7 @@ export { usePosts } from '../hooks/usePosts';
 export { useAI } from '../hooks/useAI';
 export { useWriter } from '../hooks/useWriter';
 export { useRewriter } from '../hooks/useRewriter';
-export { useArticles } from '../hooks/useArticles';
+export { useDocuments } from '../hooks/useDocuments';
 export { useMarkdown } from '../hooks/useMarkdown';
 export { useMarkdownPaste } from '../hooks/useMarkdownPaste';
 export { usePdfExport } from '../hooks/usePdfExport';
@@ -703,35 +871,35 @@ export default function PostCreatorExample() {
 **`demo/src/examples/ArticleEditorExample.jsx`:**
 ```jsx
 import { useState } from 'react';
-import { BlockNoteEditor, useArticles } from '@reactkits.dev/react-writer/articles';
+import { BlockNoteEditor, useDocuments } from '@reactkits.dev/react-writer/articles';
 
 export default function ArticleEditorExample() {
   const {
-    currentArticleId,
-    articles,
-    handleNewArticle,
-    handleSelectArticle,
+    currentDocId,
+    documents,
+    handleNewDocument,
+    handleSelectDocument,
     handleSave,
-  } = useArticles();
+  } = useDocuments();
 
   return (
     <div style={{ display: 'flex', height: '100vh' }}>
       <aside style={{ width: '250px', borderRight: '1px solid #ccc', padding: '20px' }}>
-        <button onClick={handleNewArticle}>New Article</button>
+        <button onClick={handleNewDocument}>New Article</button>
         <ul>
-          {articles.map(article => (
-            <li key={article.id}>
-              <button onClick={() => handleSelectArticle(article.id)}>
-                {article.title || 'Untitled'}
+          {documents.map(doc => (
+            <li key={doc.id}>
+              <button onClick={() => handleSelectDocument(doc.id)}>
+                {doc.title || 'Untitled'}
               </button>
             </li>
           ))}
         </ul>
       </aside>
       <main style={{ flex: 1, padding: '20px' }}>
-        {currentArticleId && (
+        {currentDocId && (
           <BlockNoteEditor
-            articleId={currentArticleId}
+            docId={currentDocId}
             onSave={handleSave}
             darkMode={false}
           />
@@ -748,19 +916,19 @@ export default function ArticleEditorExample() {
 // Similar to current App.jsx but using package imports
 import { useState } from 'react';
 import { createPostCreator } from '@reactkits.dev/react-writer/posts';
-import { BlockNoteEditor, useArticles } from '@reactkits.dev/react-writer/articles';
+import { BlockNoteEditor, useDocuments } from '@reactkits.dev/react-writer/articles';
 
 const PostCreator = createPostCreator();
 
 export default function FullAppExample() {
   const [mode, setMode] = useState('articles'); // 'articles' | 'posts'
   const {
-    currentArticleId,
-    articles,
-    handleNewArticle,
-    handleSelectArticle,
+    currentDocId,
+    documents,
+    handleNewDocument,
+    handleSelectDocument,
     handleSave,
-  } = useArticles();
+  } = useDocuments();
 
   return (
     <div>
@@ -772,14 +940,15 @@ export default function FullAppExample() {
       {mode === 'articles' && (
         <div style={{ display: 'flex' }}>
           <aside>
-            <button onClick={handleNewArticle}>New Article</button>
+            <button onClick={handleNewDocument}>New Article</button>
             {/* Article list */}
           </aside>
           <main>
-            {currentArticleId && (
+            {currentDocId && (
               <BlockNoteEditor
-                articleId={currentArticleId}
+                docId={currentDocId}
                 onSave={handleSave}
+                darkMode={false}
               />
             )}
           </main>
@@ -1049,7 +1218,9 @@ export const StorageAdapter = {
 - ✅ `RewriteButton` component - AI rewrite for blocks
 - ✅ `StreamingBlockIndicator` component - AI generation indicator
 - ✅ `WriterPrompt` component - AI writing prompts
-- ✅ `useArticles` hook - Article CRUD operations
+- ✅ `useDocuments` hook - Article/document CRUD operations (headless)
+- ✅ `useWriter` hook - AI writing service (headless)
+- ✅ `useRewriter` hook - AI rewriting service (headless)
 - ✅ `useMarkdown` hook - Markdown handling
 - ✅ `useMarkdownPaste` hook - Markdown paste support
 - ✅ `usePdfExport` hook - PDF export functionality
@@ -1084,3 +1255,5 @@ export const StorageAdapter = {
 - [ ] **Mantine preset works** - Can use package with Mantine (optional peer dependency)
 - [ ] **Custom presets work** - Users can provide their own UI components
 - [ ] Presets are properly exported and documented
+- [ ] **BlockNoteEditor is optional** - Package works without BlockNote dependencies
+- [ ] **Headless article editor works** - Users can build custom editors using hooks/services
