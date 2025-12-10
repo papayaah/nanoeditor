@@ -1,0 +1,29 @@
+{
+  "name": "demo",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@reactkits.dev/react-writer": "file:..",
+    "@blocknote/core": "^0.41.1",
+    "@blocknote/mantine": "^0.41.1",
+    "@blocknote/react": "^0.41.1",
+    "@mantine/core": "^8.3.6",
+    "@mantine/hooks": "^8.3.6",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0",
+    "lucide-react": "^0.552.0"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "^4.3.4",
+    "autoprefixer": "^10.4.22",
+    "postcss": "^8.5.6",
+    "tailwindcss": "^3.4.3",
+    "vite": "^6.0.7"
+  }
+}

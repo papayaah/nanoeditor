@@ -1,24 +1,81 @@
 {
-  "name": "nano-editor",
-  "version": "1.0.0",
-  "description": "A minimal document editor with Chrome's built-in AI for writing assistance",
+  "name": "@reactkits.dev/react-writer",
+  "version": "0.1.0",
+  "description": "Headless AI-powered writing assistant for React - works with Tailwind, Mantine, or any UI library",
   "author": "David Ang",
   "license": "MIT",
   "type": "module",
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/papayaah/nano-editor.git"
+  "main": "dist/index.js",
+  "module": "dist/index.mjs",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.js"
+    },
+    "./posts": {
+      "types": "./dist/exports/posts.d.ts",
+      "import": "./dist/exports/posts.mjs",
+      "require": "./dist/exports/posts.js"
+    },
+    "./articles": {
+      "types": "./dist/exports/articles.d.ts",
+      "import": "./dist/exports/articles.mjs",
+      "require": "./dist/exports/articles.js"
+    },
+    "./hooks": {
+      "types": "./dist/exports/hooks.d.ts",
+      "import": "./dist/exports/hooks.mjs",
+      "require": "./dist/exports/hooks.js"
+    },
+    "./styles/posts.css": "./dist/createPostCreator.css",
+    "./dist/*": "./dist/*"
   },
-  "bugs": {
-    "url": "https://github.com/papayaah/nano-editor/issues"
-  },
-  "homepage": "https://github.com/papayaah/nano-editor#readme",
   "scripts": {
-    "dev": "vite",
+    "dev": "concurrently \"npm run storybook\" \"npm run dev:demo\" --names \"storybook,demo\" --prefix-colors \"blue,green\"",
+    "dev:demo": "cd demo && npm run dev",
     "build": "vite build",
+    "build:storybook": "storybook build",
+    "storybook": "storybook dev -p 6006",
     "preview": "vite preview"
   },
+  "peerDependencies": {
+    "react": "^18.0.0 || ^19.0.0",
+    "react-dom": "^18.0.0 || ^19.0.0"
+  },
+  "peerDependenciesMeta": {
+    "@mantine/core": {
+      "optional": true
+    },
+    "@mantine/hooks": {
+      "optional": true
+    },
+    "@blocknote/core": {
+      "optional": true
+    },
+    "@blocknote/react": {
+      "optional": true
+    },
+    "@blocknote/mantine": {
+      "optional": true
+    },
+    "@blocknote/xl-pdf-exporter": {
+      "optional": true
+    },
+    "@react-pdf/renderer": {
+      "optional": true
+    }
+  },
   "dependencies": {
+    "idb": "^8.0.3",
+    "lucide-react": "^0.552.0",
+    "react-markdown": "^10.1.0"
+  },
+  "devDependencies": {
     "@blocknote/core": "^0.41.1",
     "@blocknote/mantine": "^0.41.1",
     "@blocknote/react": "^0.41.1",
@@ -26,17 +83,36 @@
     "@mantine/core": "^8.3.6",
     "@mantine/hooks": "^8.3.6",
     "@react-pdf/renderer": "^4.3.1",
-    "idb": "^8.0.3",
-    "lucide-react": "^0.552.0",
-    "react": "^19.2.0",
-    "react-dom": "^19.2.0",
-    "react-markdown": "^10.1.0"
-  },
-  "devDependencies": {
+    "@storybook/react-vite": "^10.1.0",
     "@types/react": "^19.2.2",
     "@types/react-dom": "^19.2.2",
-    "@vitejs/plugin-react": "^5.1.0",
-    "rollup-plugin-visualizer": "^6.0.5",
-    "vite": "^7.2.0"
-  }
+    "@vitejs/plugin-react": "^4.3.4",
+    "concurrently": "^9.2.1",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0",
+    "storybook": "^10.1.0",
+    "typescript": "^5.4.5",
+    "vite": "^6.0.7",
+    "vite-plugin-dts": "^4.3.0"
+  },
+  "keywords": [
+    "react",
+    "ai",
+    "writing",
+    "editor",
+    "chrome-ai",
+    "openai",
+    "gemini",
+    "headless",
+    "tailwind",
+    "mantine"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/reactkits/react-writer.git"
+  },
+  "bugs": {
+    "url": "https://github.com/reactkits/react-writer/issues"
+  },
+  "homepage": "https://github.com/reactkits/react-writer#readme"
 }

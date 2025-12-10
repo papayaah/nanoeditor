@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { BlockNoteView } from '@blocknote/mantine';
-import { 
+import {
   useCreateBlockNote,
   FormattingToolbar,
   FormattingToolbarController,
@@ -12,7 +12,8 @@ import {
   UnnestBlockButton,
   CreateLinkButton
 } from '@blocknote/react';
-import '@blocknote/mantine/style.css';
+// NOTE: CSS import removed - consumers must import '@blocknote/mantine/style.css' themselves
+// This prevents bundling 200KB+ of CSS into the library
 import { loadDocument } from '../../db';
 import { WriterPrompt } from './WriterPrompt';
 import { RewriteButton } from './RewriteButton';
@@ -23,6 +24,9 @@ import { usePdfExport } from '../../hooks/usePdfExport';
 /**
  * BlockNoteEditor - The actual editor component with all BlockNote dependencies
  * This is lazy-loaded to improve initial page performance
+ *
+ * IMPORTANT: Consumers must import '@blocknote/mantine/style.css' in their app
+ * to style the editor properly.
  */
 export default function BlockNoteEditor({ docId, onSave, onExportPdf, darkMode }) {
   const [initialContent, setInitialContent] = useState(undefined);
