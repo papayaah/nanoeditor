@@ -5,9 +5,50 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="description" content="Demo application for @reactkits.dev/react-writer - AI-powered writing assistant" />
     <title>React Writer Demo</title>
+    <!-- Critical CSS inlined for faster FCP/LCP -->
+    <style>
+      *,::before,::after{box-sizing:border-box;border:0 solid #e5e7eb}
+      html{line-height:1.5;-webkit-text-size-adjust:100%;font-family:Inter,system-ui,Avenir,Helvetica,Arial,sans-serif}
+      body{margin:0;min-height:100vh;background-color:#f5f5f5;color:#213547}
+      #root{width:100%}
+      /* Shell styles for instant FCP */
+      .shell-nav{padding:20px;border-bottom:1px solid #e5e5e5;display:flex;gap:10px;background:#fff}
+      .shell-btn{padding:8px 16px;border:1px solid #e5e5e5;border-radius:6px;background:#0066cc;color:#fff;font-size:14px}
+      .shell-btn-inactive{padding:8px 16px;border:1px solid #e5e5e5;border-radius:6px;background:#fff;color:#333;font-size:14px}
+      .shell-layout{display:flex;height:calc(100vh - 61px)}
+      .shell-sidebar{width:250px;border-right:1px solid #e5e5e5;background:#fff}
+      .shell-tabs{display:flex;border-bottom:1px solid #e5e5e5}
+      .shell-tab{flex:1;padding:12px;border:none;background:#fff;border-bottom:2px solid #0066cc;font-weight:bold}
+      .shell-tab-inactive{flex:1;padding:12px;border:none;background:#f5f5f5;border-bottom:2px solid transparent}
+      .shell-list{padding:16px}
+      .shell-new-btn{width:100%;padding:10px;margin-bottom:16px;background:#0066cc;color:#fff;border:none;border-radius:6px}
+      .shell-main{flex:1;background:#fff}
+    </style>
   </head>
   <body>
-    <div id="root"></div>
+    <div id="root">
+      <!-- UI Shell - shows instantly while JS loads -->
+      <div style="min-height:100vh;background:#f5f5f5">
+        <nav class="shell-nav">
+          <button class="shell-btn">Full App</button>
+          <button class="shell-btn-inactive">Post Creator Only</button>
+          <button class="shell-btn-inactive">Article Editor Only</button>
+          <button class="shell-btn-inactive">Custom Adapter</button>
+        </nav>
+        <div class="shell-layout">
+          <aside class="shell-sidebar">
+            <div class="shell-tabs">
+              <button class="shell-tab">Articles</button>
+              <button class="shell-tab-inactive">Posts</button>
+            </div>
+            <div class="shell-list">
+              <button class="shell-new-btn">New Article</button>
+            </div>
+          </aside>
+          <main class="shell-main"></main>
+        </div>
+      </div>
+    </div>
     <script type="module" src="/src/main.jsx"></script>
   </body>
 </html>

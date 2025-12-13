@@ -24,13 +24,15 @@
  * });
  */
 
-import { forwardRef, useState } from 'react';
+import { forwardRef, useState, lazy, Suspense } from 'react';
 import { Sparkles, Copy, Check, RefreshCw } from 'lucide-react';
 import { usePostCreator } from '../../hooks/usePostCreator';
 import { AIAssistantToggle } from './AIAssistantToggle';
 import { AIOptionsPanel } from './AIOptionsPanel';
-import ReactMarkdown from 'react-markdown';
 import './PostCreator.css';
+
+// Lazy load ReactMarkdown to reduce initial bundle size
+const ReactMarkdown = lazy(() => import('react-markdown'));
 
 // Default components (vanilla HTML)
 const DefaultInput = forwardRef(({ value, onChange, multiline, minRows, ...props }, ref) => (
@@ -341,7 +343,9 @@ export const createPostCreator = (components = {}) => {
                                           <>
                                             <div className="suggestion-content">
                                               {submission.settings?.format === 'markdown' ? (
-                                                <ReactMarkdown>{generation.suggestions[index]}</ReactMarkdown>
+                                                <Suspense fallback={<p>{generation.suggestions[index]}</p>}>
+                                                  <ReactMarkdown>{generation.suggestions[index]}</ReactMarkdown>
+                                                </Suspense>
                                               ) : (
                                                 <p>{generation.suggestions[index]}</p>
                                               )}

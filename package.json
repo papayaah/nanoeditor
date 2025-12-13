@@ -8,6 +8,10 @@
   "main": "dist/index.js",
   "module": "dist/index.mjs",
   "types": "dist/index.d.ts",
+  "sideEffects": [
+    "*.css",
+    "dist/createPostCreator.css"
+  ],
   "files": [
     "dist"
   ],
@@ -37,11 +41,13 @@
   },
   "scripts": {
     "dev": "concurrently \"npm run storybook\" \"npm run dev:demo\" --names \"storybook,demo\" --prefix-colors \"blue,green\"",
-    "dev:demo": "cd demo && npm run dev",
+    "dev:demo": "cd demo && npm install && npm run dev",
+    "preview:demo": "cd demo && npm install && npm run build && npm run preview",
     "build": "vite build",
     "build:storybook": "storybook build",
     "storybook": "storybook dev -p 6006",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "prepare": "npm run build"
   },
   "peerDependencies": {
     "react": "^18.0.0 || ^19.0.0",

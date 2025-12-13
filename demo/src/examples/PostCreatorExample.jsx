@@ -1,9 +1,19 @@
-import { useState } from 'react';
-import { createPostCreator, tailwindPreset } from '@reactkits.dev/react-writer/posts';
+import { lazy, Suspense } from 'react';
 import { usePostEntries } from '@reactkits.dev/react-writer/hooks';
 
-// Using Tailwind preset
-const PostCreator = createPostCreator(tailwindPreset);
+// Lazy load PostCreator with its CSS
+const LazyPostCreator = lazy(() =>
+  Promise.all([
+    import('@reactkits.dev/react-writer/posts'),
+    import('@reactkits.dev/react-writer/styles/posts.css'),
+  ]).then(([m]) => {
+    const PostCreator = m.createPostCreator(m.tailwindPreset);
+    return { default: PostCreator };
+  })
+);
+
+// Empty shell - no loading text for better LCP
+const EditorShell = () => <div style={{ minHeight: '400px', background: '#fff' }} />;
 
 export default function PostCreatorExample() {
   const {
@@ -30,10 +40,12 @@ export default function PostCreatorExample() {
           New Post
         </button>
       </div>
-      <PostCreator
-        currentEntryId={currentEntryId}
-        onEntrySaved={loadEntries}
-      />
+      <Suspense fallback={<EditorShell />}>
+        <LazyPostCreator
+          currentEntryId={currentEntryId}
+          onEntrySaved={loadEntries}
+        />
+      </Suspense>
     </div>
   );
 }

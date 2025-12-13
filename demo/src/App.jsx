@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, Suspense } from 'react';
 import PostCreatorExample from './examples/PostCreatorExample';
 import ArticleEditorExample from './examples/ArticleEditorExample';
 import WithCustomAdapter from './examples/WithCustomAdapter';

@@ -27,8 +27,14 @@ import { usePdfExport } from '../../hooks/usePdfExport';
  *
  * IMPORTANT: Consumers must import '@blocknote/mantine/style.css' in their app
  * to style the editor properly.
+ * 
+ * @param {string} docId - Document ID to load
+ * @param {Function} onSave - Callback when document is saved
+ * @param {Function} [onExportPdf] - Callback for PDF export
+ * @param {boolean} [darkMode] - Enable dark mode
+ * @param {string} [ariaLabel] - Accessible label for screen readers (default: "Document editor")
  */
-export default function BlockNoteEditor({ docId, onSave, onExportPdf, darkMode }) {
+export default function BlockNoteEditor({ docId, onSave, onExportPdf, darkMode, ariaLabel = 'Document editor' }) {
   const [initialContent, setInitialContent] = useState(undefined);
   const [isReady, setIsReady] = useState(false);
   const [streamingBlockId, setStreamingBlockId] = useState(null);
@@ -96,6 +102,7 @@ export default function BlockNoteEditor({ docId, onSave, onExportPdf, darkMode }
         onChange={handleChange}
         formattingToolbar={false}
         theme={darkMode ? 'dark' : 'light'}
+        ariaLabel={ariaLabel}
       >
         <FormattingToolbarController
           formattingToolbar={() => (

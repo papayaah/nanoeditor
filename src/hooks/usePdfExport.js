@@ -1,12 +1,16 @@
 import { useEffect } from 'react';
-import { PDFExporter, pdfDefaultSchemaMappings } from '@blocknote/xl-pdf-exporter';
-import * as ReactPDF from '@react-pdf/renderer';
 
 export const usePdfExport = (editor, isReady, exportPdfRef) => {
   useEffect(() => {
     if (editor && isReady && exportPdfRef) {
       exportPdfRef.current = async (docTitle) => {
         try {
+          // Dynamic import to avoid bundling heavy PDF libraries
+          const [{ PDFExporter, pdfDefaultSchemaMappings }, ReactPDF] = await Promise.all([
+            import('@blocknote/xl-pdf-exporter'),
+            import('@react-pdf/renderer')
+          ]);
+
           // Create the PDF exporter
           const exporter = new PDFExporter(editor.schema, pdfDefaultSchemaMappings);
           

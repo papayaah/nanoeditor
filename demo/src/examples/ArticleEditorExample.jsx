@@ -1,16 +1,16 @@
 import { lazy, Suspense } from 'react';
-import { useDocuments } from '@reactkits.dev/react-writer/articles';
+import { useDocuments } from '@reactkits.dev/react-writer/hooks';
 
-// Lazy load the BlockNoteEditor since it has large dependencies
+// Lazy load BlockNoteEditor with its CSS
 const BlockNoteEditor = lazy(() =>
-  import('@reactkits.dev/react-writer/articles').then(m => ({ default: m.BlockNoteEditor }))
+  Promise.all([
+    import('@reactkits.dev/react-writer/articles'),
+    import('@blocknote/mantine/style.css'),
+  ]).then(([m]) => ({ default: m.BlockNoteEditor }))
 );
 
-const LoadingFallback = () => (
-  <div style={{ padding: '40px', textAlign: 'center', color: '#666' }}>
-    Loading editor...
-  </div>
-);
+// Empty shell - no loading text for better LCP
+const EditorShell = () => <div style={{ height: '100%', background: '#fff' }} />;
 
 export default function ArticleEditorExample() {
   const {
@@ -23,7 +23,7 @@ export default function ArticleEditorExample() {
   } = useDocuments();
 
   return (
-    <div style={{ display: 'flex', height: 'calc(100vh - 60px)' }}>
+    <div style={{ display: 'flex', height: 'calc(100vh - 61px)' }}>
       <aside style={{
         width: '250px',
         borderRight: '1px solid #e5e5e5',
@@ -73,7 +73,7 @@ export default function ArticleEditorExample() {
       </aside>
       <main style={{ flex: 1, padding: '20px', background: '#fff', overflowY: 'auto' }}>
         {currentDocId ? (
-          <Suspense fallback={<LoadingFallback />}>
+          <Suspense fallback={<EditorShell />}>
             <BlockNoteEditor
               docId={currentDocId}
               onSave={handleSave}

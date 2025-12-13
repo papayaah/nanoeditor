@@ -1,20 +1,27 @@
 import { useState, lazy, Suspense } from 'react';
-import { createPostCreator, tailwindPreset } from '@reactkits.dev/react-writer/posts';
-import { useDocuments } from '@reactkits.dev/react-writer/articles';
-import { usePostEntries } from '@reactkits.dev/react-writer/hooks';
+import { useDocuments, usePostEntries } from '@reactkits.dev/react-writer/hooks';
 
-// Lazy load BlockNoteEditor
+// Lazy load BlockNoteEditor with its CSS (deferred)
 const BlockNoteEditor = lazy(() =>
-  import('@reactkits.dev/react-writer/articles').then(m => ({ default: m.BlockNoteEditor }))
+  Promise.all([
+    import('@reactkits.dev/react-writer/articles'),
+    import('@blocknote/mantine/style.css'),
+  ]).then(([m]) => ({ default: m.BlockNoteEditor }))
 );
 
-const PostCreator = createPostCreator(tailwindPreset);
-
-const LoadingFallback = () => (
-  <div style={{ padding: '40px', textAlign: 'center', color: '#666' }}>
-    Loading...
-  </div>
+// Lazy load PostCreator module with its CSS (deferred)
+const LazyPostCreator = lazy(() =>
+  Promise.all([
+    import('@reactkits.dev/react-writer/posts'),
+    import('@reactkits.dev/react-writer/styles/posts.css'),
+  ]).then(([m]) => {
+    const PostCreator = m.createPostCreator(m.tailwindPreset);
+    return { default: PostCreator };
+  })
 );
+
+// Empty shell fallback - just shows blank content area (no loading text)
+const EditorShell = () => <div style={{ height: '100%', background: '#fff' }} />;
 
 export default function FullAppExample() {
   // Default to 'articles' - a neutral starting point
@@ -40,7 +47,7 @@ export default function FullAppExample() {
   } = usePostEntries();
 
   return (
-    <div style={{ display: 'flex', height: 'calc(100vh - 60px)' }}>
+    <div style={{ display: 'flex', height: 'calc(100vh - 61px)' }}>
       {/* Sidebar */}
       <aside style={{
         width: '250px',
@@ -175,10 +182,16 @@ export default function FullAppExample() {
       </aside>
 
       {/* Main Content */}
-      <main style={{ flex: 1, background: '#fff', overflowY: 'auto' }}>
+      <main style={{ 
+        flex: 1, 
+        background: '#fff', 
+        overflowY: mode === 'articles' ? 'auto' : 'hidden',
+        display: 'flex',
+        flexDirection: 'column'
+      }}>
         {mode === 'articles' ? (
           currentDocId ? (
-            <Suspense fallback={<LoadingFallback />}>
+            <Suspense fallback={<EditorShell />}>
               <BlockNoteEditor
                 docId={currentDocId}
                 onSave={handleSave}
@@ -191,11 +204,13 @@ export default function FullAppExample() {
             </div>
           )
         ) : (
-          <div style={{ padding: '20px' }}>
-            <PostCreator
-              currentEntryId={currentEntryId}
-              onEntrySaved={loadEntries}
-            />
+          <div style={{ padding: '20px', overflowY: 'auto', flex: 1 }}>
+            <Suspense fallback={<EditorShell />}>
+              <LazyPostCreator
+                currentEntryId={currentEntryId}
+                onEntrySaved={loadEntries}
+              />
+            </Suspense>
           </div>
         )}
       </main>

@@ -1,8 +1,8 @@
-/* BlockNote editor styles */
-@import '@blocknote/mantine/style.css';
-
-/* PostCreator component styles from the writer library */
-@import '@reactkits.dev/react-writer/styles/posts.css';
+/*
+ * NOTE: BlockNote and PostCreator styles are loaded dynamically
+ * in their respective components to avoid render-blocking CSS.
+ * See ArticleEditorExample.jsx and PostCreatorExample.jsx
+ */
 
 @tailwind base;
 @tailwind components;
@@ -36,7 +36,7 @@ body {
   margin: 0;
   min-width: 320px;
   min-height: 100vh;
-  background-color: #f9fafb;
+  background-color: #f5f5f5;
 }
 
 #root {

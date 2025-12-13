@@ -1,12 +1,19 @@
-import { useState } from 'react';
-import { createPostCreator, mantinePreset } from '@reactkits.dev/react-writer/posts';
+import { lazy, Suspense } from 'react';
 import { usePostEntries } from '@reactkits.dev/react-writer/hooks';
 
-// Using Mantine preset (requires @mantine/core to be installed)
-// For this demo, we'll use the tailwind preset as fallback
-import { tailwindPreset } from '@reactkits.dev/react-writer/posts';
+// Lazy load PostCreator with its CSS
+const LazyPostCreator = lazy(() =>
+  Promise.all([
+    import('@reactkits.dev/react-writer/posts'),
+    import('@reactkits.dev/react-writer/styles/posts.css'),
+  ]).then(([m]) => {
+    const PostCreator = m.createPostCreator(m.tailwindPreset);
+    return { default: PostCreator };
+  })
+);
 
-const PostCreator = createPostCreator(tailwindPreset);
+// Empty shell - no loading text for better LCP
+const EditorShell = () => <div style={{ minHeight: '400px', background: '#fff' }} />;
 
 export default function WithCustomAdapter() {
   const {
@@ -51,10 +58,12 @@ export default function WithCustomAdapter() {
         New Post
       </button>
 
-      <PostCreator
-        currentEntryId={currentEntryId}
-        onEntrySaved={loadEntries}
-      />
+      <Suspense fallback={<EditorShell />}>
+        <LazyPostCreator
+          currentEntryId={currentEntryId}
+          onEntrySaved={loadEntries}
+        />
+      </Suspense>
     </div>
   );
 }
