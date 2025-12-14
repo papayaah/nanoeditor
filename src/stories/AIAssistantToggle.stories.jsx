@@ -19,7 +19,7 @@ A toggle button component for showing/hiding the AI options panel in the social 
 ## Usage
 
 \`\`\`jsx
-import { AIAssistantToggle } from '@buzzer/media-library';
+import { AIAssistantToggle } from '@reactkits.dev/writer';
 
 function MyComponent() {
   const [isActive, setIsActive] = useState(false);

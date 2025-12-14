@@ -19,7 +19,7 @@ A comprehensive settings panel for configuring AI generation options in the soci
 ## Usage
 
 \`\`\`jsx
-import { AIOptionsPanel } from '@buzzer/media-library';
+import { AIOptionsPanel } from '@reactkits.dev/writer';
 
 function MyComponent() {
   const [apiMode, setApiMode] = useState('writer');

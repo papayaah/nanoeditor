@@ -5,8 +5,8 @@ This package supports using your own AI API keys instead of Chrome's built-in AI
 ## Quick Start
 
 ```jsx
-import { usePostCreator } from '@buzzer/writer';
-import { OpenAIAdapter } from '@buzzer/writer/ai/adapters/openai';
+import { usePostCreator } from '@reactkits.dev/react-writer';
+import { OpenAIAdapter } from '@reactkits.dev/react-writer/ai/adapters/openai';
 
 // Create adapter with your API key
 const adapter = new OpenAIAdapter({
@@ -28,7 +28,7 @@ const { inputText, setInputText, handleSubmit } = usePostCreator({
 - Free, but requires Chrome Canary
 
 ```jsx
-import { ChromeAIAdapter } from '@buzzer/writer/ai/adapters/chrome';
+import { ChromeAIAdapter } from '@reactkits.dev/react-writer/ai/adapters/chrome';
 const adapter = new ChromeAIAdapter();
 ```
 
@@ -37,7 +37,7 @@ const adapter = new ChromeAIAdapter();
 - Supports GPT-3.5-turbo and GPT-4
 
 ```jsx
-import { OpenAIAdapter } from '@buzzer/writer/ai/adapters/openai';
+import { OpenAIAdapter } from '@reactkits.dev/react-writer/ai/adapters/openai';
 const adapter = new OpenAIAdapter({
   apiKey: 'sk-...',
   model: 'gpt-3.5-turbo', // or 'gpt-4'
@@ -49,7 +49,7 @@ const adapter = new OpenAIAdapter({
 Extend the `AIAdapter` base class:
 
 ```jsx
-import { AIAdapter } from '@buzzer/writer/ai/adapters/base';
+import { AIAdapter } from '@reactkits.dev/react-writer/ai/adapters/base';
 
 class MyCustomAdapter extends AIAdapter {
   constructor(config) {
