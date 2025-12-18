@@ -2,6 +2,9 @@
 
 Headless AI-powered writing assistant for React. Works with Tailwind, Mantine, or any UI library.
 
+![Bundlephobia min](https://img.shields.io/bundlephobia/min/@reactkits.dev/writer?style=flat&label=minified)
+![Bundlephobia minzip](https://img.shields.io/bundlephobia/minzip/@reactkits.dev/writer?style=flat&label=gzipped)
+
 ## Features
 
 - **Headless Architecture** - Bring your own UI components
