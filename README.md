@@ -1,4 +1,4 @@
-# @reactkits.dev/react-writer
+# @reactkits.dev/writer
 
 Headless AI-powered writing assistant for React. Works with Tailwind, Mantine, or any UI library.
 
@@ -14,7 +14,7 @@ Headless AI-powered writing assistant for React. Works with Tailwind, Mantine, o
 ## Installation
 
 ```bash
-npm install @reactkits.dev/react-writer
+npm install @reactkits.dev/writer
 ```
 
 ## Quick Start
@@ -22,8 +22,8 @@ npm install @reactkits.dev/react-writer
 ### Post Creator
 
 ```jsx
-import { createPostCreator, tailwindPreset } from '@reactkits.dev/react-writer/posts';
-import { usePostEntries } from '@reactkits.dev/react-writer/hooks';
+import { createPostCreator, tailwindPreset } from '@reactkits.dev/writer/posts';
+import { usePostEntries } from '@reactkits.dev/writer/hooks';
 
 // Create PostCreator with Tailwind styling
 const PostCreator = createPostCreator(tailwindPreset);
@@ -46,7 +46,7 @@ function App() {
 ### Custom UI Components
 
 ```jsx
-import { createPostCreator } from '@reactkits.dev/react-writer/posts';
+import { createPostCreator } from '@reactkits.dev/writer/posts';
 import { TextField, Button, Card, Chip } from '@mui/material';
 
 // Pass your own components
@@ -61,7 +61,7 @@ const PostCreator = createPostCreator({
 ### AI Adapters
 
 ```jsx
-import { createAdapter, usePostCreator } from '@reactkits.dev/react-writer/hooks';
+import { createAdapter, usePostCreator } from '@reactkits.dev/writer/hooks';
 
 // Default (Chrome AI - free, on-device)
 const chromeAdapter = createAdapter();
@@ -85,16 +85,16 @@ const geminiAdapter = createAdapter({
 
 ```jsx
 // Main entry
-import { PostCreator, usePostCreator } from '@reactkits.dev/react-writer';
+import { PostCreator, usePostCreator } from '@reactkits.dev/writer';
 
 // Post Creator specific
-import { createPostCreator, tailwindPreset } from '@reactkits.dev/react-writer/posts';
+import { createPostCreator, tailwindPreset } from '@reactkits.dev/writer/posts';
 
 // Article Editor specific
-import { BlockNoteEditor, useDocuments } from '@reactkits.dev/react-writer/articles';
+import { BlockNoteEditor, useDocuments } from '@reactkits.dev/writer/articles';
 
 // Hooks and adapters
-import { useWriter, useRewriter, createAdapter } from '@reactkits.dev/react-writer/hooks';
+import { useWriter, useRewriter, createAdapter } from '@reactkits.dev/writer/hooks';
 ```
 
 ## Available Hooks

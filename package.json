@@ -1,5 +1,5 @@
 {
-  "name": "@reactkits.dev/react-writer",
+  "name": "@reactkits.dev/writer",
   "version": "0.1.0",
   "description": "Headless AI-powered writing assistant for React - works with Tailwind, Mantine, or any UI library",
   "author": "David Ang",
